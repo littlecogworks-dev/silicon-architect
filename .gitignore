@@ -1,0 +1,27 @@
+# --- Godot Specific ---
+.godot/
+*.import
+export_presets.cfg
+
+# --- .NET / C# Specific ---
+bin/
+obj/
+*.sln
+*.csproj
+.vs/
+.vscode/
+.editorconfig
+
+# --- OS Specific (Linux/macOS) ---
+.DS_Store
+.directory
+Thumbs.db
+
+# --- Affinity / Art Specific ---
+*.afdesign~lock~
+*.tmp
+*.bak
+
+# --- VS Code Specific ---
+.history/
+*.log
