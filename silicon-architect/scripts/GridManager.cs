@@ -669,7 +669,11 @@ public partial class GridManager : GridContainer
 
     private void UpdateShopPlacementPreview(Vector2 pointerPosition)
     {
-        MotherboardTile hoveredTile = GetTileAtGlobalPosition(pointerPosition);
+        UpdateShopPlacementPreview(GetTileAtGlobalPosition(pointerPosition));
+    }
+
+    private void UpdateShopPlacementPreview(MotherboardTile hoveredTile)
+    {
         if (hoveredTile == _shopPreviewAnchorTile)
         {
             return;
@@ -850,6 +854,7 @@ public partial class GridManager : GridContainer
 
     private void OnTileTapped(MotherboardTile tile)
     {
+        bool isConfirmTap = _selectedTouchTile == tile;
         SetTouchSelection(tile);
 
         // One-off quick build: clicking an empty lot places immediately even when build mode is off.
@@ -858,13 +863,38 @@ public partial class GridManager : GridContainer
         {
             if (_isShopPlacementMode)
             {
+                if (!isConfirmTap || _shopPreviewAnchorTile != tile)
+                {
+                    UpdateShopPlacementPreview(tile);
+                    _spawnStatus = CityTerminology.ShopPlacementModePrompt;
+                    return;
+                }
+
                 TryPlaceShop(tile);
                 return;
             }
 
             if (_isParkPlacementMode)
             {
+                if (!isConfirmTap)
+                {
+                    _spawnStatus = CityTerminology.ParkPlacementModePrompt;
+                    return;
+                }
+
                 TryPlacePark(tile);
+                return;
+            }
+
+            if (_isPlacementMode)
+            {
+                if (!isConfirmTap)
+                {
+                    _spawnStatus = CityTerminology.PlacementModePrompt;
+                    return;
+                }
+
+                TryPlaceHome(tile);
                 return;
             }
 

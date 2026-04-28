@@ -14,15 +14,16 @@ public static class CityTerminology
     public const string EmptyLotName = "Empty Lot";
     public const string BuildUnitName = "Home";
     public const string InspectPrompt = "Tap a tile to inspect";
-    public static string InitialBuildPrompt => $"Tap an empty lot to build a {BuildUnitName}, or use Build mode";
+    public static string InitialBuildPrompt => $"Choose a build mode, then tap a lot to preview and tap again to build";
 
     public static string IncomeBoostExpired => $"{BoostLabel} expired";
     public static string IncomeBoostLockedPrompt => "2x Income unlocks after reaching more cash";
     public static string IncomeBoostUnlockedPrompt => "2x Income unlocked";
     public static string NoEmptyLotsPrompt => "No empty lots available";
-    public static string PlacementModePrompt => "Build mode: tap an empty lot";
-    public static string ParkPlacementModePrompt => "Park mode: tap an empty lot";
-    public static string ShopPlacementModePrompt => "Shop mode: tap an empty lot";
+    public static string PlacementModePrompt => "Build mode: tap a lot to preview, tap again to build";
+    public static string ParkPlacementModePrompt => "Park mode: tap a lot to preview, tap again to build";
+    public static string ShopPlacementModePrompt => "Shop mode: tap a lot to preview, tap again to build";
+    public static string SelectBuildModePrompt => "Select Home, Park, or Shop mode first";
     public static string PickEmptyLotPrompt => "Pick an empty lot";
     public static string MergePendingPrompt => "Merge pending - drag onto a matching building to complete";
     public static string MergeStartPrompt => "Tap and drag from one building onto a matching building";
