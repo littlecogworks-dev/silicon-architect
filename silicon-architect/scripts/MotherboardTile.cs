@@ -159,14 +159,18 @@ public partial class MotherboardTile : Control
         Vector2 baseScale = Vector2.One;
         Scale = baseScale;
         Socket.Scale = baseScale;
+        Socket.Rotation = 0.0f;
         _mergePulseTween = CreateTween();
         _mergePulseTween.SetTrans(Tween.TransitionType.Sine);
         _mergePulseTween.SetEase(Tween.EaseType.Out);
         _mergePulseTween.TweenProperty(Socket, "scale", new Vector2(1.15f, 0.9f), 0.08f);
+        _mergePulseTween.Parallel().TweenProperty(Socket, "rotation", 0.087f, 0.08f);
         _mergePulseTween.SetEase(Tween.EaseType.InOut);
         _mergePulseTween.TweenProperty(Socket, "scale", new Vector2(0.95f, 1.1f), 0.08f);
+        _mergePulseTween.Parallel().TweenProperty(Socket, "rotation", -0.087f, 0.08f);
         _mergePulseTween.TweenProperty(Socket, "scale", baseScale, 0.1f);
-        _mergePulseTween.Finished += () => _isPulseAnimating = false;
+        _mergePulseTween.Parallel().TweenProperty(Socket, "rotation", 0.0f, 0.1f);
+        _mergePulseTween.Finished += () => { _isPulseAnimating = false; Socket.Rotation = 0.0f; };
     }
 
     public void PlayPlacementJuice()

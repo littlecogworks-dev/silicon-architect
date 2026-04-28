@@ -458,7 +458,8 @@ public partial class GridManager : GridContainer
         text.Position = localPoint - new Vector2(30.0f, 24.0f);
 
         float horizontalDrift = (float)GD.RandRange(-26.0, 26.0);
-        text.Play($"+{Mathf.RoundToInt(amount)}", new Color("#ffd166"), new Vector2(horizontalDrift, -42.0f));
+        Color incomeColor = _incomeMultiplier > 1.0f ? new Color("#00ffcc") : new Color("#ffd166");
+        text.Play($"+{Mathf.RoundToInt(amount)}", incomeColor, new Vector2(horizontalDrift, -42.0f));
     }
 
     private void OnDoubleIncomeButtonPressed()
@@ -589,6 +590,7 @@ public partial class GridManager : GridContainer
         }
 
         _totalCoins -= TransistorSpawnCost;
+        TransistorSpawnCost = Mathf.Round(TransistorSpawnCost * 1.15f);
         ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Transistor);
         tile.PlayPlacementJuice();
         _spawnStatus = $"Built Home on {tile.Name}";
@@ -600,8 +602,9 @@ public partial class GridManager : GridContainer
     {
         if (!IsMergeable(tile.Role))
         {
-            _spawnStatus = "Tap matching-tier compute tiles to merge";
-            ClearMergeSelection();
+            _spawnStatus = _selectedMergeTile != null
+                ? "Merge pending — tap a matching building to complete"
+                : "Tap a building to select it for merging";
             return;
         }
 
