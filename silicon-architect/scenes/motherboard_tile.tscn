@@ -11,6 +11,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 256.0
 offset_bottom = 256.0
+clip_contents = true
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_vd303")
@@ -25,6 +26,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
 texture = ExtResource("2_as8v0")
 
 [node name="Traces" type="TextureRect" parent="." unique_id=399746184]
@@ -34,6 +37,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
 texture = ExtResource("3_h6sxt")
 
 [node name="Socket" type="TextureRect" parent="." unique_id=1435389981]
@@ -43,4 +48,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
 texture = ExtResource("4_4t283")

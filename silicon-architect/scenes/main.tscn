@@ -11,10 +11,57 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MotherboardGrid" type="GridContainer" parent="." unique_id=1602243641]
+[node name="PortraitLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="TopBar" type="HBoxContainer" parent="PortraitLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SimulationHudLabel" type="Label" parent="PortraitLayout/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Micro-City Prototype"
+autowrap_mode = 3
+
+[node name="DoubleIncomeButton" type="Button" parent="PortraitLayout/TopBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 56)
+text = "2x Income (Ad)"
+
+[node name="BoardCenter" type="CenterContainer" parent="PortraitLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MotherboardGrid" type="GridContainer" parent="PortraitLayout/BoardCenter" unique_id=1602243641]
 layout_mode = 0
 theme_override_constants/h_separation = 0
 theme_override_constants/v_separation = 0
 columns = 5
 script = ExtResource("1_0wfyh")
 TileScene = ExtResource("2_sugp2")
+
+[node name="BottomBar" type="HBoxContainer" parent="PortraitLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SelectedTileLabel" type="Label" parent="PortraitLayout/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Tap a tile to inspect"
+autowrap_mode = 3
+
+[node name="SpawnTransistorButton" type="Button" parent="PortraitLayout/BottomBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 60)
+text = "Build Home"

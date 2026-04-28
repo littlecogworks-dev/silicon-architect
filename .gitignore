@@ -27,3 +27,6 @@ Thumbs.db
 *.log
 
 .obsidian/
+_builds/
+android/
+ios/
