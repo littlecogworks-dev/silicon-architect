@@ -135,7 +135,7 @@ public partial class MotherboardTile : Control
     public void SetHeat(float value)
     {
         CurrentHeat = Mathf.Clamp(value, 0.0f, 100.0f);
-        Efficiency = CalculateEfficiency(CurrentHeat);
+        Efficiency = CalculateOutputEfficiency(CurrentHeat);
         UpdateVisualState();
         UpdateTooltip();
     }
@@ -222,7 +222,7 @@ public partial class MotherboardTile : Control
     /// <summary>
     /// Converts pollution into a production penalty for income-generating buildings.
     /// </summary>
-    private float CalculateEfficiency(float heat)
+    private float CalculateOutputEfficiency(float heat)
     {
         if (Role != TileRole.Processor && Role != TileRole.LogicGate && Role != TileRole.Transistor)
         {
@@ -324,14 +324,6 @@ public partial class MotherboardTile : Control
     /// </summary>
     private void UpdateTooltip()
     {
-        float deliveredPower = RequestedPowerDraw * _suppliedPowerRatio;
-        TooltipText = $"{Name}\n" +
-            $"Role: {Role}\n" +
-            $"Tier: {ComponentTier}\n" +
-            $"Heat: {CurrentHeat:0.0}\n" +
-            $"Efficiency: {Efficiency:P0}\n" +
-            $"Data/s: {DataOutputPerSecond * Efficiency * _suppliedPowerRatio:0.0}\n" +
-            $"Power: {deliveredPower:0.0} / {RequestedPowerDraw:0.0} W\n" +
-            $"Grid Load: {_totalGridDemand:0.0} / {_totalGridCapacity:0.0} W";
+        TooltipText = CityTerminology.FormatTileTooltip(this, _suppliedPowerRatio, _totalGridDemand, _totalGridCapacity);
     }
 }
