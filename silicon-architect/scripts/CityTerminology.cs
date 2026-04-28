@@ -8,10 +8,22 @@ public static class CityTerminology
     public const string PollutionLabel = "Pollution";
     public const string CashLabel = "Cash";
     public const string IncomeLabel = "Income";
+    public const string BuildCostLabel = "Build Cost";
+    public const string BoostLabel = "2x Income";
     public const string EmptyLotName = "Empty Lot";
     public const string BuildUnitName = "Home";
     public const string InspectPrompt = "Tap a tile to inspect";
     public static string InitialBuildPrompt => $"Tap Build {BuildUnitName}, then tap an empty lot";
+
+    public static string IncomeBoostExpired => $"{BoostLabel} expired";
+    public static string NoEmptyLotsPrompt => "No empty lots available";
+    public static string PlacementModePrompt => "Build mode: tap an empty lot";
+    public static string PickEmptyLotPrompt => "Pick an empty lot";
+    public static string MergePendingPrompt => "Merge pending - tap a matching building to complete";
+    public static string MergeStartPrompt => "Tap a building to select it for merging";
+    public static string MergeSelectionCleared => "Merge selection cleared";
+    public static string MergeRequiresMatchPrompt => "Merge requires matching buildings";
+    public static string PlacementCanceledPrompt => "Build canceled";
 
     public static string GetRoleName(MotherboardTile.TileRole role)
     {
@@ -60,7 +72,7 @@ public static class CityTerminology
 
     public static string FormatBuildCost(float buildCost)
     {
-        return $"Build Cost: {buildCost:0.0} {CashLabel}";
+        return $"{BuildCostLabel}: {buildCost:0.0} {CashLabel}";
     }
 
     public static string FormatBuiltMessage(string tileName)
@@ -76,5 +88,16 @@ public static class CityTerminology
     public static string FormatMergedInto(MotherboardTile.TileRole role, string tileName)
     {
         return $"Merged into {GetRoleName(role)} on {tileName}";
+    }
+
+    public static string FormatCannotMergeFurther(MotherboardTile.TileRole role)
+    {
+        return $"{GetRoleName(role)} cannot merge further yet";
+    }
+
+    public static string FormatHudStatus(int unhappyDistrictCount, int incomeDistrictCount, int parkCount)
+    {
+        return $"Unhappy Districts: {unhappyDistrictCount}/{incomeDistrictCount}\n" +
+            $"Parks Active: {parkCount}\n";
     }
 }

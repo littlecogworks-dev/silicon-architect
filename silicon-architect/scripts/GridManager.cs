@@ -131,7 +131,7 @@ public partial class GridManager : GridContainer
             if (_rewardedIncomeTimeRemaining <= 0.0f)
             {
                 _incomeMultiplier = 1.0f;
-                _spawnStatus = "Double Income expired";
+                _spawnStatus = CityTerminology.IncomeBoostExpired;
             }
             UpdateDoubleIncomeButtonState();
         }
@@ -247,36 +247,36 @@ public partial class GridManager : GridContainer
         }
 
         float suppliedPowerRatio = totalPowerDemand > 0.0f ? Mathf.Min(totalPowerCapacity / totalPowerDemand, 1.0f) : 1.0f;
-        Dictionary<MotherboardTile, float> nextHeatByTile = new();
-        int throttledCompute = 0;
-        int computeCount = 0;
-        int fanCount = 0;
+        Dictionary<MotherboardTile, float> nextPollutionByTile = new();
+        int unhappyDistrictCount = 0;
+        int incomeDistrictCount = 0;
+        int parkCount = 0;
         float coinsGeneratedThisTick = 0.0f;
 
         // Second pass applies the snapshot, updates income, and refreshes per-tile presentation.
         foreach (MotherboardTile tile in _tiles)
         {
-            float neighborHeatAverage = GetNeighborPollutionAverage(tile);
-            float thermalBleed = (neighborHeatAverage - tile.CurrentHeat) * ThermalBleedFactor;
+            float neighborPollutionAverage = GetNeighborPollutionAverage(tile);
+            float thermalBleed = (neighborPollutionAverage - tile.CurrentHeat) * ThermalBleedFactor;
             float generatedHeat = tile.HeatGenerationPerSecond * tile.Efficiency * suppliedPowerRatio;
             float cooling = (tile.PassiveCoolingPerSecond + AmbientCoolingPerSecond) * deltaSeconds;
-            float nextHeat = tile.CurrentHeat + ((generatedHeat + thermalBleed) * deltaSeconds) - cooling;
-            nextHeatByTile[tile] = nextHeat;
+            float nextPollution = tile.CurrentHeat + ((generatedHeat + thermalBleed) * deltaSeconds) - cooling;
+            nextPollutionByTile[tile] = nextPollution;
         }
 
         float hottestTile = 0.0f;
         foreach (MotherboardTile tile in _tiles)
         {
             tile.SetPowerState(suppliedPowerRatio, totalPowerDemand, totalPowerCapacity);
-            tile.SetHeat(nextHeatByTile[tile]);
+            tile.SetHeat(nextPollutionByTile[tile]);
             hottestTile = Mathf.Max(hottestTile, tile.CurrentHeat);
 
             if (tile.Role == MotherboardTile.TileRole.Processor || tile.Role == MotherboardTile.TileRole.LogicGate || tile.Role == MotherboardTile.TileRole.Transistor)
             {
-                computeCount += 1;
+                incomeDistrictCount += 1;
                 if (tile.Efficiency < 0.999f)
                 {
-                    throttledCompute += 1;
+                    unhappyDistrictCount += 1;
                 }
             }
 
@@ -292,7 +292,7 @@ public partial class GridManager : GridContainer
 
             if (tile.Role == MotherboardTile.TileRole.Fan)
             {
-                fanCount += 1;
+                parkCount += 1;
             }
         }
 
@@ -306,8 +306,7 @@ public partial class GridManager : GridContainer
                 $"{CityTerminology.PollutionLabel}: {hottestTile:0.0}%\n" +
                 $"Power Draw: {totalPowerDemand:0.0}W / {totalPowerCapacity:0.0}W ({suppliedPowerRatio:P0})\n" +
                 $"{CityTerminology.CashLabel}: {_totalCoins:0.0} (+{_lastCoinsGenerated:0.0}/tick)\n" +
-                $"Compute Throttled: {throttledCompute}/{computeCount}\n" +
-                $"Fans Active: {fanCount}\n" +
+                CityTerminology.FormatHudStatus(unhappyDistrictCount, incomeDistrictCount, parkCount) +
                 $"Bleed: 4-way=1.0, diagonal={DiagonalBleedWeight:0.00}\n" +
                 CityTerminology.FormatBuildCost(TransistorSpawnCost) + "\n" +
                 _spawnStatus;
@@ -326,7 +325,7 @@ public partial class GridManager : GridContainer
 
     private float GetNeighborPollutionAverage(MotherboardTile tile)
     {
-        float totalNeighborHeat = 0.0f;
+        float totalNeighborPollution = 0.0f;
         float totalWeight = 0.0f;
 
         foreach (Vector2I offset in OrthogonalNeighborOffsets)
@@ -337,7 +336,7 @@ public partial class GridManager : GridContainer
                 continue;
             }
 
-            totalNeighborHeat += neighbor.CurrentHeat;
+            totalNeighborPollution += neighbor.CurrentHeat;
             totalWeight += 1.0f;
         }
 
@@ -349,11 +348,11 @@ public partial class GridManager : GridContainer
                 continue;
             }
 
-            totalNeighborHeat += neighbor.CurrentHeat * DiagonalBleedWeight;
+            totalNeighborPollution += neighbor.CurrentHeat * DiagonalBleedWeight;
             totalWeight += DiagonalBleedWeight;
         }
 
-        return totalWeight > 0.0f ? totalNeighborHeat / totalWeight : tile.CurrentHeat;
+        return totalWeight > 0.0f ? totalNeighborPollution / totalWeight : tile.CurrentHeat;
     }
 
     private void OnBuildButtonPressed()
@@ -363,7 +362,7 @@ public partial class GridManager : GridContainer
         if (_isPlacementMode)
         {
             _isPlacementMode = false;
-            _spawnStatus = "Placement canceled";
+            _spawnStatus = CityTerminology.PlacementCanceledPrompt;
             UpdatePlacementHighlights();
             return;
         }
@@ -376,12 +375,12 @@ public partial class GridManager : GridContainer
 
         if (!HasEmptySocket())
         {
-            _spawnStatus = "No empty sockets available";
+            _spawnStatus = CityTerminology.NoEmptyLotsPrompt;
             return;
         }
 
         _isPlacementMode = true;
-        _spawnStatus = "Placement mode: tap an empty socket";
+        _spawnStatus = CityTerminology.PlacementModePrompt;
         UpdatePlacementHighlights();
     }
 
@@ -405,7 +404,7 @@ public partial class GridManager : GridContainer
     {
         if (tile.Role != MotherboardTile.TileRole.Empty)
         {
-            _spawnStatus = "Pick an empty socket";
+            _spawnStatus = CityTerminology.PickEmptyLotPrompt;
             return;
         }
 
@@ -434,8 +433,8 @@ public partial class GridManager : GridContainer
         if (!IsMergeable(tile.Role))
         {
             _spawnStatus = _selectedMergeTile != null
-                ? "Merge pending — tap a matching building to complete"
-                : "Tap a building to select it for merging";
+                ? CityTerminology.MergePendingPrompt
+                : CityTerminology.MergeStartPrompt;
             return;
         }
 
@@ -449,21 +448,21 @@ public partial class GridManager : GridContainer
 
         if (_selectedMergeTile == tile)
         {
-            _spawnStatus = "Merge selection cleared";
+            _spawnStatus = CityTerminology.MergeSelectionCleared;
             ClearMergeSelection();
             return;
         }
 
         if (_selectedMergeTile.Role != tile.Role)
         {
-            _spawnStatus = "Merge requires matching tiers";
+            _spawnStatus = CityTerminology.MergeRequiresMatchPrompt;
             ClearMergeSelection();
             return;
         }
 
         if (!TryGetMergedRole(tile.Role, out MotherboardTile.TileRole mergedRole))
         {
-            _spawnStatus = $"{tile.Role} cannot merge further yet";
+            _spawnStatus = CityTerminology.FormatCannotMergeFurther(tile.Role);
             ClearMergeSelection();
             return;
         }
