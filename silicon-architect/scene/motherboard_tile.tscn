@@ -8,11 +8,11 @@
 [node name="MotherboardTile" type="Node2D" unique_id=1265516271]
 script = ExtResource("1_y3hh0")
 
-[node name="Background" type="Sprite2D" parent="." unique_id=1045879250]
+[node name="Background" type="TextureRect" parent="." unique_id=600776035]
 texture = ExtResource("1_k7hg4")
 
-[node name="Traces" type="Sprite2D" parent="." unique_id=127338723]
+[node name="Traces" type="TextureRect" parent="." unique_id=399746184]
 texture = ExtResource("2_y3hh0")
 
-[node name="Socket" type="Sprite2D" parent="." unique_id=1240958690]
+[node name="Socket" type="TextureRect" parent="." unique_id=1435389981]
 texture = ExtResource("3_004hs")
