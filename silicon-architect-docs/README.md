@@ -1,38 +1,34 @@
-# Silicon Architect: Documentation Vault
+# Silicon Architect Docs
 
-Project Goal: Development of a high-fidelity "Merge-Idle" hardware simulation for Android.
-Primary Tech Stack: Godot 4 (C#/.NET), Affinity Designer, Obsidian.
+Obsidian-compatible documentation vault for the active game build.
 
-## 🏗️ System Architecture
+## Start Here
 
-Core Logic: Documentation of the "Tick" system, heat bleed maths, and currency generation.
+- [[Game Overview]]
+- [[Current Systems]]
+- [[Terminology]]
+- [[Roadmap]]
 
-Component Data: A database of all hardware (CPUs, Coolers, Power Rails) and their stats.
+## Current Direction
 
-Fail States: Detailed logic for Thermal Throttling and the "City Falls" meltdown sequence.
+Silicon Architect is currently positioned as a hybrid city-builder / idle merge game.
 
-## 🎨 Visual Identity
+- Surface theme: city growth, districts, parks, pollution, cash
+- Underlying system flavour: power, adjacency, heat bleed, upgrade chains
+- Engine: Godot 4 C#
+- Documentation style: plain markdown, Obsidian wikilinks, lightweight notes
 
-Asset Guidelines: Modular tile specs (256px), anchor points, and colour palettes.
+## Vault Conventions
 
-Reference Art: Mood boards and circuit board schematics.
+- Use one note per topic
+- Prefer short sections over long walls of text
+- Use wikilinks like `[[Roadmap]]` for navigation
+- Keep player-facing language in sync with `CityTerminology.cs`
 
-## 🔬 Research & Case Studies
+## Suggested Next Notes
 
-UX/UI Notes: Observations on haptic feedback and "quality" markers in mobile gaming.
-
-Dev Log: Daily logs tracking speed vs. software quality.
-
-## 🛠️ Quick Commands (Memo)
-
-Grid Size: 5x5 Motherboard (standard).
-
-Tile Anchor Points: 64px, 128px, 192px.
-
-The "Spark": Heat must be a physical constraint, not just a UI bar.
-
-## Inspiration
-
-> "Silicon is just sand with ideas."
-> — Anonymous Hardware Enthusiast
+- `Daily Notes/`
+- `UI Ideas.md`
+- `Economy Balancing.md`
+- `Android Release Checklist.md`
 
