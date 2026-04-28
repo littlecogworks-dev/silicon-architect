@@ -204,6 +204,22 @@ public partial class GridManager
         text.Play(CityTerminology.FormatObjectiveRewardPopup(rewardCash), new Color("#9dff8a"), new Vector2(0.0f, -56.0f));
     }
 
+    private void ShowPlacementConfirmHint(MotherboardTile tile)
+    {
+        if (_floatingTextRoot == null || tile == null)
+        {
+            return;
+        }
+
+        FloatingText text = new FloatingText();
+        _floatingTextRoot.AddChild(text);
+
+        Vector2 screenPoint = tile.GetGlobalRect().GetCenter();
+        Vector2 localPoint = _floatingTextRoot.GetGlobalTransformWithCanvas().AffineInverse() * screenPoint;
+        text.Position = localPoint + new Vector2(-90.0f, -42.0f);
+        text.Play(CityTerminology.TapAgainToBuildPrompt, new Color("#c8ff9f"), new Vector2(0.0f, -30.0f));
+    }
+
     private void StartObjectiveHudFlash()
     {
         _objectiveHudFlashRemaining = ObjectiveHudFlashDurationSeconds;

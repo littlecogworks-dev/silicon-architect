@@ -866,6 +866,7 @@ public partial class GridManager : GridContainer
                 if (!isConfirmTap || _shopPreviewAnchorTile != tile)
                 {
                     UpdateShopPlacementPreview(tile);
+                    ShowPlacementConfirmHint(tile);
                     _spawnStatus = CityTerminology.ShopPlacementModePrompt;
                     return;
                 }
@@ -878,6 +879,7 @@ public partial class GridManager : GridContainer
             {
                 if (!isConfirmTap)
                 {
+                    ShowPlacementConfirmHint(tile);
                     _spawnStatus = CityTerminology.ParkPlacementModePrompt;
                     return;
                 }
@@ -890,6 +892,7 @@ public partial class GridManager : GridContainer
             {
                 if (!isConfirmTap)
                 {
+                    ShowPlacementConfirmHint(tile);
                     _spawnStatus = CityTerminology.PlacementModePrompt;
                     return;
                 }

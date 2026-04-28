@@ -24,6 +24,7 @@ public static class CityTerminology
     public static string ParkPlacementModePrompt => "Park mode: tap a lot to preview, tap again to build";
     public static string ShopPlacementModePrompt => "Shop mode: tap a lot to preview, tap again to build";
     public static string SelectBuildModePrompt => "Select Home, Park, or Shop mode first";
+    public static string TapAgainToBuildPrompt => "Tap again to build";
     public static string PickEmptyLotPrompt => "Pick an empty lot";
     public static string MergePendingPrompt => "Merge pending - drag onto a matching building to complete";
     public static string MergeStartPrompt => "Tap and drag from one building onto a matching building";
