@@ -1,6 +1,9 @@
 using Godot;
 using System;
 
+/// <summary>
+/// Visual and gameplay state for a single board tile, including selection and juice animations.
+/// </summary>
 public partial class MotherboardTile : Control
 {
     [Signal]
@@ -19,6 +22,8 @@ public partial class MotherboardTile : Control
     [Export] public TextureRect Background;
     [Export] public TextureRect Traces;
     [Export] public TextureRect Socket;
+    [Export] public AudioStreamPlayer TapSound;
+    [Export] public AudioStreamPlayer MergeSound;
     [Export] public float IdleBobStrength = 0.025f;
     [Export] public float IdleBobSpeed = 2.0f;
     [Export] public float WarmThrottleThreshold = 45.0f;
@@ -54,6 +59,9 @@ public partial class MotherboardTile : Control
         SetProcess(true);
     }
 
+    /// <summary>
+    /// Runs the idle breathing animation on the inner socket only so tiles never overlap neighbors.
+    /// </summary>
     public override void _Process(double delta)
     {
         if (_isPulseAnimating)
@@ -85,17 +93,22 @@ public partial class MotherboardTile : Control
     {
         if (@event is InputEventMouseButton mouseButton && mouseButton.Pressed && mouseButton.ButtonIndex == MouseButton.Left)
         {
+            TapSound?.Play();
             EmitSignal(SignalName.TileTapped, this);
             AcceptEvent();
         }
 
         if (@event is InputEventScreenTouch touch && touch.Pressed)
         {
+            TapSound?.Play();
             EmitSignal(SignalName.TileTapped, this);
             AcceptEvent();
         }
     }
 
+    /// <summary>
+    /// Applies the role-specific stats pushed in by the board manager.
+    /// </summary>
     public void Configure(Vector2I position, TileRole role, int componentTier, float heatGenerationPerSecond, float passiveCoolingPerSecond, float dataOutputPerSecond, float requestedPowerDraw, float powerCapacity)
     {
         GridPosition = position;
@@ -145,6 +158,9 @@ public partial class MotherboardTile : Control
         UpdateVisualState();
     }
 
+    /// <summary>
+    /// Plays the larger merge confirmation animation and optional merge sound.
+    /// </summary>
     public void PlayMergePulse()
     {
         _mergePulseTween?.Kill();
@@ -155,6 +171,7 @@ public partial class MotherboardTile : Control
             return;
         }
 
+        MergeSound?.Play();
         _isPulseAnimating = true;
         Vector2 baseScale = Vector2.One;
         Scale = baseScale;
@@ -173,6 +190,9 @@ public partial class MotherboardTile : Control
         _mergePulseTween.Finished += () => { _isPulseAnimating = false; Socket.Rotation = 0.0f; };
     }
 
+    /// <summary>
+    /// Plays the smaller placement animation used when building a new Home.
+    /// </summary>
     public void PlayPlacementJuice()
     {
         _mergePulseTween?.Kill();
@@ -199,6 +219,9 @@ public partial class MotherboardTile : Control
         PivotOffset = Size * 0.5f;
     }
 
+    /// <summary>
+    /// Converts pollution into a production penalty for income-generating buildings.
+    /// </summary>
     private float CalculateEfficiency(float heat)
     {
         if (Role != TileRole.Processor && Role != TileRole.LogicGate && Role != TileRole.Transistor)
@@ -234,6 +257,9 @@ public partial class MotherboardTile : Control
         return Mathf.Clamp((value - min) / (max - min), 0.0f, 1.0f);
     }
 
+    /// <summary>
+    /// Recolors the tile to reflect role, power state, placement targeting, and selection.
+    /// </summary>
     private void UpdateVisualState()
     {
         Color backgroundColor = Role switch
@@ -266,7 +292,7 @@ public partial class MotherboardTile : Control
                 TileRole.LogicGate => new Color("#ffe680"),
                 TileRole.Transistor => new Color("#b7f171"),
                 TileRole.Fan => new Color("#7df9ff"),
-                _ => new Color("#7f8c8d"),
+                _ => new Color("#7fb069"),
             };
 
             if ((Role == TileRole.Processor || Role == TileRole.LogicGate || Role == TileRole.Transistor) && _suppliedPowerRatio < 1.0f)
@@ -293,6 +319,9 @@ public partial class MotherboardTile : Control
         }
     }
 
+    /// <summary>
+    /// Keeps the desktop tooltip aligned with the current simulation numbers.
+    /// </summary>
     private void UpdateTooltip()
     {
         float deliveredPower = RequestedPowerDraw * _suppliedPowerRatio;

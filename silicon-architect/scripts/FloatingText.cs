@@ -1,5 +1,8 @@
 using Godot;
 
+/// <summary>
+/// Lightweight popup label used for coin gain and other short-lived board feedback.
+/// </summary>
 public partial class FloatingText : Label
 {
     [Export] public float LifetimeSeconds = 0.8f;
@@ -12,6 +15,9 @@ public partial class FloatingText : Label
         AddThemeFontSizeOverride("font_size", 28);
     }
 
+    /// <summary>
+    /// Animates the label upward while fading it out, then frees the node.
+    /// </summary>
     public void Play(string message, Color color, Vector2 travel)
     {
         Text = message;

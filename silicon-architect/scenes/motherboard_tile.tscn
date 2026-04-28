@@ -4,20 +4,24 @@
 [ext_resource type="Texture2D" uid="uid://da4xqott2myy7" path="res://assets/tile/background.png" id="2_as8v0"]
 [ext_resource type="Texture2D" uid="uid://c7su40n3s8ss5" path="res://assets/tile/traces.png" id="3_h6sxt"]
 [ext_resource type="Texture2D" uid="uid://bv8tsocsf768a" path="res://assets/tile/socket.png" id="4_4t283"]
+[ext_resource type="AudioStream" uid="uid://b14cjjvfne8j1" path="res://assets/audio/kenney.nl/click1.ogg" id="5_h6sxt"]
+[ext_resource type="AudioStream" uid="uid://c1564opso7bbv" path="res://assets/audio/kenney.nl/switch32.ogg" id="6_4t283"]
 
-[node name="MotherboardTile" type="Control" unique_id=265498337 node_paths=PackedStringArray("Background", "Traces", "Socket")]
+[node name="MotherboardTile" type="Control" unique_id=265498337 node_paths=PackedStringArray("Background", "Traces", "Socket", "TapSound", "MergeSound")]
+clip_contents = true
 custom_minimum_size = Vector2(256, 256)
 layout_mode = 3
 anchors_preset = 0
 offset_right = 256.0
 offset_bottom = 256.0
-clip_contents = true
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_vd303")
 Background = NodePath("Background")
 Traces = NodePath("Traces")
 Socket = NodePath("Socket")
+TapSound = NodePath("TapSound")
+MergeSound = NodePath("MergeSound")
 
 [node name="Background" type="TextureRect" parent="." unique_id=600776035]
 layout_mode = 1
@@ -26,9 +30,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-expand_mode = 1
-stretch_mode = 0
 texture = ExtResource("2_as8v0")
+expand_mode = 1
 
 [node name="Traces" type="TextureRect" parent="." unique_id=399746184]
 layout_mode = 1
@@ -37,9 +40,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-expand_mode = 1
-stretch_mode = 0
 texture = ExtResource("3_h6sxt")
+expand_mode = 1
 
 [node name="Socket" type="TextureRect" parent="." unique_id=1435389981]
 layout_mode = 1
@@ -48,6 +50,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-expand_mode = 1
-stretch_mode = 0
 texture = ExtResource("4_4t283")
+expand_mode = 1
+
+[node name="TapSound" type="AudioStreamPlayer" parent="." unique_id=1411621534]
+stream = ExtResource("5_h6sxt")
+
+[node name="MergeSound" type="AudioStreamPlayer" parent="." unique_id=1186399630]
+stream = ExtResource("6_4t283")

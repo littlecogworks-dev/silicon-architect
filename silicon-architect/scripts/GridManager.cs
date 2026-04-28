@@ -2,6 +2,9 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// Owns the board state, simulation loop, economy, and HUD wiring for the city-builder prototype.
+/// </summary>
 public partial class GridManager : GridContainer
 {
     private static readonly Vector2I[] OrthogonalNeighborOffsets =
@@ -153,6 +156,9 @@ public partial class GridManager : GridContainer
         }
     }
 
+    /// <summary>
+    /// Instantiates the tile scene once and seeds the opening board layout.
+    /// </summary>
     private void GenerateGrid()
     {
         if (_gridGenerated || TileScene == null)
@@ -229,6 +235,9 @@ public partial class GridManager : GridContainer
         return manhattanDistance == 1 ? MotherboardTile.TileRole.LogicGate : MotherboardTile.TileRole.Empty;
     }
 
+    /// <summary>
+    /// Binds scene-level HUD controls after the main scene tree is fully available.
+    /// </summary>
     private void EnsureSimulationHud()
     {
         Node sceneRoot = GetTree().CurrentScene;
@@ -298,11 +307,16 @@ public partial class GridManager : GridContainer
         UpdateSpawnButtonState();
     }
 
+    /// <summary>
+    /// Advances one simulation tick: power, pollution, throttling, income, and HUD telemetry.
+    /// </summary>
     private void StepThermalSimulation(float deltaSeconds)
     {
         float totalPowerDemand = 0.0f;
         float totalPowerCapacity = 0.0f;
 
+        // First pass computes the next pollution value from the current board snapshot so tiles
+        // do not influence neighbors mid-step.
         foreach (MotherboardTile tile in _tiles)
         {
             totalPowerDemand += tile.RequestedPowerDraw;
@@ -316,6 +330,7 @@ public partial class GridManager : GridContainer
         int fanCount = 0;
         float coinsGeneratedThisTick = 0.0f;
 
+        // Second pass applies the snapshot, updates income, and refreshes per-tile presentation.
         foreach (MotherboardTile tile in _tiles)
         {
             float neighborHeatAverage = GetNeighborHeatAverage(tile);
@@ -386,6 +401,9 @@ public partial class GridManager : GridContainer
         }
     }
 
+    /// <summary>
+    /// Tracks the tile currently being inspected from a touch or click interaction.
+    /// </summary>
     private void SetTouchSelection(MotherboardTile tile)
     {
         if (_selectedTouchTile == tile)
@@ -443,6 +461,9 @@ public partial class GridManager : GridContainer
         };
     }
 
+    /// <summary>
+    /// Spawns a short-lived floating cash readout near the tile that generated the income.
+    /// </summary>
     private void ShowFloatingIncome(MotherboardTile tile, float amount)
     {
         if (_floatingTextRoot == null || amount < 0.5f)
@@ -462,6 +483,9 @@ public partial class GridManager : GridContainer
         text.Play($"+{Mathf.RoundToInt(amount)}", incomeColor, new Vector2(horizontalDrift, -42.0f));
     }
 
+    /// <summary>
+    /// Entry point for the rewarded-ad style income boost.
+    /// </summary>
     private void OnDoubleIncomeButtonPressed()
     {
         if (DevInstantRewardedAd)
@@ -573,6 +597,9 @@ public partial class GridManager : GridContainer
         HandleMergeTap(tile);
     }
 
+    /// <summary>
+    /// Builds the base Home unit on an empty lot and applies the idle-game cost ramp.
+    /// </summary>
     private void TryPlaceTransistor(MotherboardTile tile)
     {
         if (tile.Role != MotherboardTile.TileRole.Empty)
@@ -598,6 +625,9 @@ public partial class GridManager : GridContainer
         UpdatePlacementHighlights();
     }
 
+    /// <summary>
+    /// Handles tap-to-select merge flow for upgradeable buildings.
+    /// </summary>
     private void HandleMergeTap(MotherboardTile tile)
     {
         if (!IsMergeable(tile.Role))
@@ -718,6 +748,9 @@ public partial class GridManager : GridContainer
         _spawnButton.Disabled = _totalCoins < TransistorSpawnCost || !HasEmptySocket();
     }
 
+    /// <summary>
+    /// Recomputes tile sizing so the square board fits the available portrait layout space.
+    /// </summary>
     private void UpdateBoardLayout()
     {
         if (!_gridGenerated || GetParentControl() == null)
