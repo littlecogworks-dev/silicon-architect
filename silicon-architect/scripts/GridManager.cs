@@ -255,13 +255,21 @@ public partial class GridManager : GridContainer
 
         if (_spawnButton != null)
         {
-            _spawnButton.Pressed -= OnSpawnButtonPressed;
+            var spawnCallable = Callable.From(OnSpawnButtonPressed);
+            if (_spawnButton.IsConnected(BaseButton.SignalName.Pressed, spawnCallable))
+            {
+                _spawnButton.Pressed -= OnSpawnButtonPressed;
+            }
             _spawnButton.Pressed += OnSpawnButtonPressed;
         }
 
         if (_doubleIncomeButton != null)
         {
-            _doubleIncomeButton.Pressed -= OnDoubleIncomeButtonPressed;
+            var doubleCallable = Callable.From(OnDoubleIncomeButtonPressed);
+            if (_doubleIncomeButton.IsConnected(BaseButton.SignalName.Pressed, doubleCallable))
+            {
+                _doubleIncomeButton.Pressed -= OnDoubleIncomeButtonPressed;
+            }
             _doubleIncomeButton.Pressed += OnDoubleIncomeButtonPressed;
             UpdateDoubleIncomeButtonState();
         }
