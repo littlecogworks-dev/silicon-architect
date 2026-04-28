@@ -683,6 +683,7 @@ public partial class GridManager : GridContainer
         }
 
         _shopPreviewAnchorTile = hoveredTile;
+        _shopPreviewAnchorTile.SetShopPreviewAnchorHighlight(true);
         foreach (MotherboardTile tile in _tiles)
         {
             bool receivesAmenities =
@@ -703,6 +704,7 @@ public partial class GridManager : GridContainer
         foreach (MotherboardTile tile in _tiles)
         {
             tile.SetShopPreviewHighlight(false);
+            tile.SetShopPreviewAnchorHighlight(false);
         }
     }
 
