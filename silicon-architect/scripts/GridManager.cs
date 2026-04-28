@@ -101,6 +101,7 @@ public partial class GridManager : GridContainer
     private string _spawnStatus = CityTerminology.InitialBuildPrompt;
     private float _incomeMultiplier = 1.0f;
     private float _rewardedIncomeTimeRemaining;
+    private MotherboardTile _shopPreviewAnchorTile;
     private MotherboardTile _selectedMergeTile;
     private MotherboardTile _mergeHoverTile;
     private MotherboardTile _selectedTouchTile;
@@ -209,7 +210,27 @@ public partial class GridManager : GridContainer
 
     public override void _Input(InputEvent @event)
     {
-        if (!_gridGenerated || _selectedMergeTile == null)
+        if (!_gridGenerated)
+        {
+            return;
+        }
+
+        if (_isShopPlacementMode)
+        {
+            if (@event is InputEventMouseMotion shopMouseMotion)
+            {
+                UpdateShopPlacementPreview(shopMouseMotion.GlobalPosition);
+                return;
+            }
+
+            if (@event is InputEventScreenDrag shopScreenDrag)
+            {
+                UpdateShopPlacementPreview(shopScreenDrag.Position);
+                return;
+            }
+        }
+
+        if (_selectedMergeTile == null)
         {
             return;
         }
@@ -358,6 +379,10 @@ public partial class GridManager : GridContainer
         _isPlacementMode = homeMode;
         _isParkPlacementMode = parkMode;
         _isShopPlacementMode = shopMode;
+        if (!shopMode)
+        {
+            ClearShopPlacementPreview();
+        }
         UpdatePlacementHighlights();
     }
 
@@ -642,6 +667,45 @@ public partial class GridManager : GridContainer
         }
     }
 
+    private void UpdateShopPlacementPreview(Vector2 pointerPosition)
+    {
+        MotherboardTile hoveredTile = GetTileAtGlobalPosition(pointerPosition);
+        if (hoveredTile == _shopPreviewAnchorTile)
+        {
+            return;
+        }
+
+        ClearShopPlacementPreview();
+
+        if (hoveredTile == null || hoveredTile.Role != MotherboardTile.TileRole.Empty)
+        {
+            return;
+        }
+
+        _shopPreviewAnchorTile = hoveredTile;
+        foreach (MotherboardTile tile in _tiles)
+        {
+            bool receivesAmenities =
+                (tile.Role == MotherboardTile.TileRole.Transistor || tile.Role == MotherboardTile.TileRole.LogicGate) &&
+                IsWithinServiceRadius(tile.GridPosition, _shopPreviewAnchorTile.GridPosition, ShopServiceRadius);
+            tile.SetShopPreviewHighlight(receivesAmenities);
+        }
+    }
+
+    private static bool IsWithinServiceRadius(Vector2I a, Vector2I b, int radius)
+    {
+        return Mathf.Abs(a.X - b.X) <= radius && Mathf.Abs(a.Y - b.Y) <= radius;
+    }
+
+    private void ClearShopPlacementPreview()
+    {
+        _shopPreviewAnchorTile = null;
+        foreach (MotherboardTile tile in _tiles)
+        {
+            tile.SetShopPreviewHighlight(false);
+        }
+    }
+
     private bool HasRoleWithinRadius(MotherboardTile centerTile, MotherboardTile.TileRole role, int radius)
     {
         for (int y = -radius; y <= radius; y++)
@@ -919,6 +983,7 @@ public partial class GridManager : GridContainer
 
         _totalCoins -= _currentShopCost;
         AdvanceShopCost();
+        ClearShopPlacementPreview();
         ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Shop);
         tile.PlayPlacementJuice();
 

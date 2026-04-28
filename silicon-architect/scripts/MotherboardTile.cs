@@ -50,6 +50,7 @@ public partial class MotherboardTile : Control
     private bool _mergeTargetHighlighted;
     private bool _mergeTargetIsValid;
     private bool _shopCoverageHighlighted;
+    private bool _shopPreviewHighlighted;
     private bool _touchSelected;
     private float _idleTime;
     private bool _isPulseAnimating;
@@ -166,6 +167,12 @@ public partial class MotherboardTile : Control
     public void SetShopCoverageHighlight(bool isHighlighted)
     {
         _shopCoverageHighlighted = isHighlighted;
+        UpdateVisualState();
+    }
+
+    public void SetShopPreviewHighlight(bool isHighlighted)
+    {
+        _shopPreviewHighlighted = isHighlighted;
         UpdateVisualState();
     }
 
@@ -339,6 +346,11 @@ public partial class MotherboardTile : Control
             if (_shopCoverageHighlighted)
             {
                 socketColor = socketColor.Lerp(new Color("#8de6ff"), 0.45f);
+            }
+
+            if (_shopPreviewHighlighted)
+            {
+                socketColor = socketColor.Lerp(new Color("#66f2ff"), 0.65f);
             }
 
             if (_touchSelected)
