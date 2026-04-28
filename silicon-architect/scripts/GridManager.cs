@@ -898,7 +898,7 @@ public partial class GridManager : GridContainer
                 return;
             }
 
-            TryPlaceHome(tile);
+            _spawnStatus = CityTerminology.SelectBuildModePrompt;
             return;
         }
 
