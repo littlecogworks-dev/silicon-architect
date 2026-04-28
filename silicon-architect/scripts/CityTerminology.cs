@@ -9,6 +9,7 @@ public static class CityTerminology
     public const string CashLabel = "Cash";
     public const string IncomeLabel = "Income";
     public const string BuildCostLabel = "Build Cost";
+    public const string ObjectiveLabel = "Objective";
     public const string BoostLabel = "2x Income";
     public const string EmptyLotName = "Empty Lot";
     public const string BuildUnitName = "Home";
@@ -99,5 +100,20 @@ public static class CityTerminology
     {
         return $"Unhappy Districts: {unhappyDistrictCount}/{incomeDistrictCount}\n" +
             $"Parks Active: {parkCount}\n";
+    }
+
+    public static string FormatObjectiveStatus(string objectiveDescription, int progress, int target, float rewardCash)
+    {
+        return $"{ObjectiveLabel}: {objectiveDescription} ({progress}/{target})  Reward +{rewardCash:0}";
+    }
+
+    public static string FormatObjectiveCompleted(string objectiveName, float rewardCash)
+    {
+        return $"Objective complete: {objectiveName} (+{rewardCash:0} {CashLabel})";
+    }
+
+    public static string FormatObjectiveRewardPopup(float rewardCash)
+    {
+        return $"Objective +{rewardCash:0} {CashLabel}";
     }
 }

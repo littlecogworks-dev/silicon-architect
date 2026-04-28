@@ -39,6 +39,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(240, 76)
 text = "2x Income (Ad)"
 
+[node name="ObjectiveLabel" type="Label" parent="PortraitLayout"]
+layout_mode = 2
+text = "Objective: Build Homes (0/2)  Reward +55"
+autowrap_mode = 3
+
 [node name="BoardCenter" type="CenterContainer" parent="PortraitLayout"]
 layout_mode = 2
 size_flags_vertical = 3

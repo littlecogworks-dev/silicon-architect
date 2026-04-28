@@ -2,11 +2,15 @@ using Godot;
 
 public partial class GridManager
 {
+    private const float ObjectiveHudFlashDurationSeconds = 0.6f;
+    private static readonly Color ObjectiveHudFlashColor = new("#c8ff9f");
     private Label _simulationHudLabel;
+    private Label _objectiveLabel;
     private Label _selectedTileLabel;
     private Button _spawnButton;
     private Button _doubleIncomeButton;
     private Control _floatingTextRoot;
+    private float _objectiveHudFlashRemaining;
 
     /// <summary>
     /// Binds scene-level HUD controls after the main scene tree is fully available.
@@ -20,6 +24,7 @@ public partial class GridManager
         }
 
         _simulationHudLabel = sceneRoot.FindChild("SimulationHudLabel", true, false) as Label;
+        _objectiveLabel = sceneRoot.FindChild("ObjectiveLabel", true, false) as Label;
         _selectedTileLabel = sceneRoot.FindChild("SelectedTileLabel", true, false) as Label;
         _spawnButton = sceneRoot.FindChild("SpawnTransistorButton", true, false) as Button;
         _doubleIncomeButton = sceneRoot.FindChild("DoubleIncomeButton", true, false) as Button;
@@ -33,6 +38,11 @@ public partial class GridManager
         {
             _selectedTileLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             _selectedTileLabel.Text = CityTerminology.InspectPrompt;
+        }
+
+        if (_objectiveLabel != null)
+        {
+            _objectiveLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         }
 
         if (_spawnButton != null)
@@ -78,6 +88,16 @@ public partial class GridManager
         }
 
         UpdateSpawnButtonState();
+    }
+
+    private void UpdateObjectiveReadout(string objectiveDescription, int progress, int target, float rewardCash)
+    {
+        if (_objectiveLabel == null)
+        {
+            return;
+        }
+
+        _objectiveLabel.Text = CityTerminology.FormatObjectiveStatus(objectiveDescription, progress, target, rewardCash);
     }
 
     /// <summary>
@@ -142,6 +162,45 @@ public partial class GridManager
         float horizontalDrift = (float)GD.RandRange(-26.0, 26.0);
         Color incomeColor = _incomeMultiplier > 1.0f ? new Color("#00ffcc") : new Color("#ffd166");
         text.Play($"+{Mathf.RoundToInt(amount)}", incomeColor, new Vector2(horizontalDrift, -42.0f));
+    }
+
+    private void ShowObjectiveRewardPopup(float rewardCash)
+    {
+        if (_floatingTextRoot == null)
+        {
+            return;
+        }
+
+        FloatingText text = new FloatingText();
+        _floatingTextRoot.AddChild(text);
+
+        Vector2 viewportCenter = GetViewportRect().Size * 0.5f;
+        Vector2 localPoint = _floatingTextRoot.GetGlobalTransformWithCanvas().AffineInverse() * viewportCenter;
+        text.Position = localPoint + new Vector2(-80.0f, -180.0f);
+        text.Play(CityTerminology.FormatObjectiveRewardPopup(rewardCash), new Color("#9dff8a"), new Vector2(0.0f, -56.0f));
+    }
+
+    private void StartObjectiveHudFlash()
+    {
+        _objectiveHudFlashRemaining = ObjectiveHudFlashDurationSeconds;
+    }
+
+    private void UpdateObjectiveHudFlash(float deltaSeconds)
+    {
+        if (_objectiveLabel == null)
+        {
+            return;
+        }
+
+        if (_objectiveHudFlashRemaining <= 0.0f)
+        {
+            _objectiveLabel.SelfModulate = Colors.White;
+            return;
+        }
+
+        _objectiveHudFlashRemaining = Mathf.Max(0.0f, _objectiveHudFlashRemaining - deltaSeconds);
+        float blend = _objectiveHudFlashRemaining / ObjectiveHudFlashDurationSeconds;
+        _objectiveLabel.SelfModulate = Colors.White.Lerp(ObjectiveHudFlashColor, blend);
     }
 
     /// <summary>

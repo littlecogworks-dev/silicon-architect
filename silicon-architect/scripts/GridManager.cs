@@ -7,6 +7,13 @@ using System.Collections.Generic;
 /// </summary>
 public partial class GridManager : GridContainer
 {
+    private enum ObjectiveType
+    {
+        BuildHomes,
+        PerformMerges,
+        EarnCash,
+    }
+
     private static readonly Vector2I[] OrthogonalNeighborOffsets =
     {
         Vector2I.Left,
@@ -74,6 +81,11 @@ public partial class GridManager : GridContainer
     private float _rewardedIncomeTimeRemaining;
     private MotherboardTile _selectedMergeTile;
     private MotherboardTile _selectedTouchTile;
+    private ObjectiveType _activeObjectiveType;
+    private int _activeObjectiveTarget;
+    private int _activeObjectiveProgress;
+    private float _activeObjectiveRewardCash;
+    private int _objectiveStage;
     private readonly List<MotherboardTile> _tiles = new();
     private readonly Dictionary<Vector2I, MotherboardTile> _tilesByPosition = new();
 
@@ -83,6 +95,7 @@ public partial class GridManager : GridContainer
         _totalCoins = StartingCash;
         _currentHomeCost = StartingHomeCost;
         _homesBuilt = 0;
+        InitializeObjectives();
 
         Control parent = GetParentControl();
         if (parent != null)
@@ -151,6 +164,7 @@ public partial class GridManager : GridContainer
             _simulationAccumulator -= SimulationTickSeconds;
         }
 
+        UpdateObjectiveHudFlash((float)delta);
     }
 
     public override void _Input(InputEvent @event)
@@ -272,6 +286,98 @@ public partial class GridManager : GridContainer
         _currentHomeCost = Mathf.Round(_currentHomeCost * HomeCostMultiplier);
     }
 
+    private void InitializeObjectives()
+    {
+        _objectiveStage = 0;
+        SetObjectiveFromStage(_objectiveStage);
+    }
+
+    private void SetObjectiveFromStage(int stage)
+    {
+        int cycle = stage % 3;
+        int tier = stage / 3;
+
+        switch (cycle)
+        {
+            case 0:
+                _activeObjectiveType = ObjectiveType.BuildHomes;
+                _activeObjectiveTarget = 2 + tier;
+                _activeObjectiveRewardCash = 55.0f + (tier * 18.0f);
+                break;
+            case 1:
+                _activeObjectiveType = ObjectiveType.PerformMerges;
+                _activeObjectiveTarget = 2 + tier;
+                _activeObjectiveRewardCash = 85.0f + (tier * 22.0f);
+                break;
+            default:
+                _activeObjectiveType = ObjectiveType.EarnCash;
+                _activeObjectiveTarget = 90 + (tier * 45);
+                _activeObjectiveRewardCash = 110.0f + (tier * 28.0f);
+                break;
+        }
+
+        _activeObjectiveProgress = 0;
+    }
+
+    private void AdvanceObjective()
+    {
+        _objectiveStage += 1;
+        SetObjectiveFromStage(_objectiveStage);
+    }
+
+    private void AddObjectiveProgress(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        _activeObjectiveProgress = Mathf.Min(_activeObjectiveProgress + amount, _activeObjectiveTarget);
+
+        if (_activeObjectiveProgress < _activeObjectiveTarget)
+        {
+            return;
+        }
+
+        _totalCoins += _activeObjectiveRewardCash;
+        float rewardCash = _activeObjectiveRewardCash;
+        string completedObjectiveName = GetObjectiveName(_activeObjectiveType);
+        AdvanceObjective();
+        ShowObjectiveRewardPopup(rewardCash);
+        StartObjectiveHudFlash();
+        _spawnStatus = CityTerminology.FormatObjectiveCompleted(completedObjectiveName, rewardCash);
+    }
+
+    private void AddObjectiveCashProgress(float amount)
+    {
+        if (_activeObjectiveType != ObjectiveType.EarnCash || amount <= 0.0f)
+        {
+            return;
+        }
+
+        AddObjectiveProgress(Mathf.RoundToInt(amount));
+    }
+
+    private string GetObjectiveName(ObjectiveType objective)
+    {
+        return objective switch
+        {
+            ObjectiveType.BuildHomes => "Build Homes",
+            ObjectiveType.PerformMerges => "Complete Merges",
+            _ => "Earn Cash",
+        };
+    }
+
+    private string GetObjectiveDescription(ObjectiveType objective)
+    {
+        return objective switch
+        {
+            ObjectiveType.BuildHomes => "Build Homes",
+            ObjectiveType.PerformMerges => "Merge matching districts",
+            _ => "Generate Cash",
+        };
+    }
+
     /// <summary>
     /// Advances one simulation tick: power, pollution, throttling, income, and HUD telemetry.
     /// </summary>
@@ -340,6 +446,7 @@ public partial class GridManager : GridContainer
 
         _lastCoinsGenerated = coinsGeneratedThisTick;
         _totalCoins += coinsGeneratedThisTick;
+        AddObjectiveCashProgress(coinsGeneratedThisTick);
 
         if (_simulationHudLabel != null)
         {
@@ -353,6 +460,8 @@ public partial class GridManager : GridContainer
                 CityTerminology.FormatBuildCost(_currentHomeCost) + "\n" +
                 _spawnStatus;
         }
+
+        UpdateObjectiveReadout(GetObjectiveDescription(_activeObjectiveType), _activeObjectiveProgress, _activeObjectiveTarget, _activeObjectiveRewardCash);
 
             UpdateSpawnButtonState();
 
@@ -472,6 +581,10 @@ public partial class GridManager : GridContainer
 
         _totalCoins -= _currentHomeCost;
         AdvanceHomeCost();
+        if (_activeObjectiveType == ObjectiveType.BuildHomes)
+        {
+            AddObjectiveProgress(1);
+        }
         ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Transistor);
         tile.PlayPlacementJuice();
 
@@ -544,6 +657,10 @@ public partial class GridManager : GridContainer
         target.SetHeat(mergedHeat);
         target.PlayMergePulse();
         ApplyRoleConfiguration(_selectedMergeTile, _selectedMergeTile.GridPosition, MotherboardTile.TileRole.Empty);
+        if (_activeObjectiveType == ObjectiveType.PerformMerges)
+        {
+            AddObjectiveProgress(1);
+        }
         _spawnStatus = CityTerminology.FormatMergedInto(mergedRole, target.Name);
         ClearMergeSelection();
     }
