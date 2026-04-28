@@ -45,7 +45,11 @@ public partial class GridManager : GridContainer
     [Export] public float TransistorPassiveCoolingPerSecond = 1.8f;
     [Export] public float TransistorDataOutputPerSecond = 0.25f;
     [Export] public float TransistorPowerDraw = 9.0f;
-    [Export] public float TransistorSpawnCost = 25.0f;
+    [Export] public float StartingCash = 60.0f;
+    [Export] public float StartingHomeCost = 20.0f;
+    [Export] public int OpeningFlatCostBuildCount = 3;
+    [Export] public float OpeningHomeCostStep = 5.0f;
+    [Export] public float HomeCostMultiplier = 1.15f;
     [Export] public float FanHeatGenerationPerSecond = 0.0f;
     [Export] public float FanPassiveCoolingPerSecond = 10.0f;
     [Export] public float FanPowerDraw = 8.0f;
@@ -62,6 +66,8 @@ public partial class GridManager : GridContainer
     private float _telemetryAccumulator;
     private float _totalCoins;
     private float _lastCoinsGenerated;
+    private float _currentHomeCost;
+    private int _homesBuilt;
     private bool _isPlacementMode;
     private string _spawnStatus = CityTerminology.InitialBuildPrompt;
     private float _incomeMultiplier = 1.0f;
@@ -74,6 +80,9 @@ public partial class GridManager : GridContainer
     public override void _Ready()
     {
         Columns = GridSize;
+        _totalCoins = StartingCash;
+        _currentHomeCost = StartingHomeCost;
+        _homesBuilt = 0;
 
         Control parent = GetParentControl();
         if (parent != null)
@@ -140,6 +149,32 @@ public partial class GridManager : GridContainer
         {
             StepCitySimulation(SimulationTickSeconds);
             _simulationAccumulator -= SimulationTickSeconds;
+        }
+
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (!_gridGenerated || _selectedMergeTile == null)
+        {
+            return;
+        }
+
+        Vector2? releasePosition = null;
+
+        if (@event is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Left && !mb.Pressed)
+        {
+            releasePosition = mb.GlobalPosition;
+        }
+        else if (@event is InputEventScreenTouch touch && !touch.Pressed)
+        {
+            releasePosition = touch.Position;
+        }
+
+        if (releasePosition.HasValue)
+        {
+            MotherboardTile target = GetTileAtGlobalPosition(releasePosition.Value);
+            TryCompleteMergeDrag(target);
         }
     }
 
@@ -221,13 +256,20 @@ public partial class GridManager : GridContainer
             return MotherboardTile.TileRole.PowerRail;
         }
 
-        if (Mathf.Abs(coordinates.X - center.X) == 1 && Mathf.Abs(coordinates.Y - center.Y) == 1)
+        return MotherboardTile.TileRole.Empty;
+    }
+
+    private void AdvanceHomeCost()
+    {
+        _homesBuilt += 1;
+
+        if (_homesBuilt < OpeningFlatCostBuildCount)
         {
-            return MotherboardTile.TileRole.Fan;
+            _currentHomeCost += OpeningHomeCostStep;
+            return;
         }
 
-        int manhattanDistance = Mathf.Abs(coordinates.X - center.X) + Mathf.Abs(coordinates.Y - center.Y);
-        return manhattanDistance == 1 ? MotherboardTile.TileRole.LogicGate : MotherboardTile.TileRole.Empty;
+        _currentHomeCost = Mathf.Round(_currentHomeCost * HomeCostMultiplier);
     }
 
     /// <summary>
@@ -308,7 +350,7 @@ public partial class GridManager : GridContainer
                 $"{CityTerminology.CashLabel}: {_totalCoins:0.0} (+{_lastCoinsGenerated:0.0}/tick)\n" +
                 CityTerminology.FormatHudStatus(unhappyDistrictCount, incomeDistrictCount, parkCount) +
                 $"Bleed: 4-way=1.0, diagonal={DiagonalBleedWeight:0.00}\n" +
-                CityTerminology.FormatBuildCost(TransistorSpawnCost) + "\n" +
+                CityTerminology.FormatBuildCost(_currentHomeCost) + "\n" +
                 _spawnStatus;
         }
 
@@ -367,9 +409,9 @@ public partial class GridManager : GridContainer
             return;
         }
 
-        if (_totalCoins < TransistorSpawnCost)
+        if (_totalCoins < _currentHomeCost)
         {
-            _spawnStatus = CityTerminology.FormatNeedMoreCash(TransistorSpawnCost - _totalCoins);
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentHomeCost - _totalCoins);
             return;
         }
 
@@ -388,13 +430,25 @@ public partial class GridManager : GridContainer
     {
         SetTouchSelection(tile);
 
-        if (_isPlacementMode)
+        // One-off quick build: clicking an empty lot places immediately even when build mode is off.
+        // Build mode still exists for continuous placement until canceled.
+        if (tile.Role == MotherboardTile.TileRole.Empty)
         {
             TryPlaceHome(tile);
             return;
         }
 
-        HandleMergeTap(tile);
+        if (_isPlacementMode)
+        {
+            // Tapping an occupied tile while building exits build mode cleanly.
+            // Does NOT fall through to merge — the press here is a mode switch, not a drag start.
+            _isPlacementMode = false;
+            _spawnStatus = CityTerminology.PlacementCanceledPrompt;
+            UpdatePlacementHighlights();
+            return;
+        }
+
+        StartMergeDrag(tile);
     }
 
     /// <summary>
@@ -408,72 +462,103 @@ public partial class GridManager : GridContainer
             return;
         }
 
-        if (_totalCoins < TransistorSpawnCost)
+        if (_totalCoins < _currentHomeCost)
         {
-            _spawnStatus = CityTerminology.FormatNeedMoreCash(TransistorSpawnCost - _totalCoins);
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentHomeCost - _totalCoins);
             _isPlacementMode = false;
             UpdatePlacementHighlights();
             return;
         }
 
-        _totalCoins -= TransistorSpawnCost;
-        TransistorSpawnCost = Mathf.Round(TransistorSpawnCost * 1.15f);
+        _totalCoins -= _currentHomeCost;
+        AdvanceHomeCost();
         ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Transistor);
         tile.PlayPlacementJuice();
-        _spawnStatus = CityTerminology.FormatBuiltMessage(tile.Name);
-        _isPlacementMode = false;
+
+        if (_totalCoins >= _currentHomeCost && HasEmptySocket())
+        {
+            _isPlacementMode = true;
+            _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.PlacementModePrompt}";
+        }
+        else if (!HasEmptySocket())
+        {
+            _isPlacementMode = false;
+            _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.NoEmptyLotsPrompt}";
+        }
+        else
+        {
+            _isPlacementMode = false;
+            _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.FormatNeedMoreCash(_currentHomeCost - _totalCoins)}";
+        }
+
         UpdatePlacementHighlights();
     }
 
     /// <summary>
-    /// Handles tap-to-select merge flow for upgradeable buildings.
+    /// Begins a merge drag: highlights the pressed tile as the source.
+    /// Merge completes in _Input on release over a valid target.
     /// </summary>
-    private void HandleMergeTap(MotherboardTile tile)
+    private void StartMergeDrag(MotherboardTile tile)
     {
         if (!IsMergeable(tile.Role))
         {
-            _spawnStatus = _selectedMergeTile != null
-                ? CityTerminology.MergePendingPrompt
-                : CityTerminology.MergeStartPrompt;
-            return;
-        }
-
-        if (_selectedMergeTile == null)
-        {
-            _selectedMergeTile = tile;
-            _selectedMergeTile.SetMergeSelection(true);
-            _spawnStatus = CityTerminology.FormatMergeSelected(tile.Role, tile.Name);
-            return;
-        }
-
-        if (_selectedMergeTile == tile)
-        {
-            _spawnStatus = CityTerminology.MergeSelectionCleared;
             ClearMergeSelection();
+            _spawnStatus = CityTerminology.MergeStartPrompt;
             return;
         }
 
-        if (_selectedMergeTile.Role != tile.Role)
+        ClearMergeSelection();
+        _selectedMergeTile = tile;
+        _selectedMergeTile.SetMergeSelection(true);
+        _spawnStatus = CityTerminology.FormatMergeSelected(tile.Role, tile.Name);
+    }
+
+    /// <summary>
+    /// Completes a merge drag on release. Called from _Input with the tile under the release position.
+    /// </summary>
+    private void TryCompleteMergeDrag(MotherboardTile target)
+    {
+        if (target == null || target == _selectedMergeTile)
+        {
+            ClearMergeSelection();
+            _spawnStatus = CityTerminology.MergeStartPrompt;
+            return;
+        }
+
+        if (_selectedMergeTile.Role != target.Role)
         {
             _spawnStatus = CityTerminology.MergeRequiresMatchPrompt;
             ClearMergeSelection();
             return;
         }
 
-        if (!TryGetMergedRole(tile.Role, out MotherboardTile.TileRole mergedRole))
+        if (!TryGetMergedRole(target.Role, out MotherboardTile.TileRole mergedRole))
         {
-            _spawnStatus = CityTerminology.FormatCannotMergeFurther(tile.Role);
+            _spawnStatus = CityTerminology.FormatCannotMergeFurther(target.Role);
             ClearMergeSelection();
             return;
         }
 
-        float mergedHeat = (_selectedMergeTile.CurrentHeat + tile.CurrentHeat) * 0.5f;
-        ApplyRoleConfiguration(tile, tile.GridPosition, mergedRole);
-        tile.SetHeat(mergedHeat);
-        tile.PlayMergePulse();
+        float mergedHeat = (_selectedMergeTile.CurrentHeat + target.CurrentHeat) * 0.5f;
+        ApplyRoleConfiguration(target, target.GridPosition, mergedRole);
+        target.SetHeat(mergedHeat);
+        target.PlayMergePulse();
         ApplyRoleConfiguration(_selectedMergeTile, _selectedMergeTile.GridPosition, MotherboardTile.TileRole.Empty);
-        _spawnStatus = CityTerminology.FormatMergedInto(mergedRole, tile.Name);
+        _spawnStatus = CityTerminology.FormatMergedInto(mergedRole, target.Name);
         ClearMergeSelection();
+    }
+
+    private MotherboardTile GetTileAtGlobalPosition(Vector2 globalPosition)
+    {
+        foreach (MotherboardTile tile in _tiles)
+        {
+            if (tile.GetGlobalRect().HasPoint(globalPosition))
+            {
+                return tile;
+            }
+        }
+
+        return null;
     }
 
     private static bool IsMergeable(MotherboardTile.TileRole role)

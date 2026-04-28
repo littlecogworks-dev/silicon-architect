@@ -191,7 +191,7 @@ public partial class GridManager
             return;
         }
 
-        _spawnButton.Text = _isPlacementMode ? "Cancel Placement" : CityTerminology.FormatBuildButton(TransistorSpawnCost);
+        _spawnButton.Text = _isPlacementMode ? "Cancel Placement" : CityTerminology.FormatBuildButton(_currentHomeCost);
 
         if (_isPlacementMode)
         {
@@ -199,6 +199,6 @@ public partial class GridManager
             return;
         }
 
-        _spawnButton.Disabled = _totalCoins < TransistorSpawnCost || !HasEmptySocket();
+        _spawnButton.Disabled = _totalCoins < _currentHomeCost || !HasEmptySocket();
     }
 }

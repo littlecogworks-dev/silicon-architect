@@ -26,7 +26,7 @@ theme_override_constants/separation = 12
 
 [node name="TopBar" type="HBoxContainer" parent="PortraitLayout"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 12
 
 [node name="SimulationHudLabel" type="Label" parent="PortraitLayout/TopBar"]
 layout_mode = 2
@@ -36,7 +36,7 @@ autowrap_mode = 3
 
 [node name="DoubleIncomeButton" type="Button" parent="PortraitLayout/TopBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 56)
+custom_minimum_size = Vector2(240, 76)
 text = "2x Income (Ad)"
 
 [node name="BoardCenter" type="CenterContainer" parent="PortraitLayout"]
@@ -53,7 +53,7 @@ TileScene = ExtResource("2_sugp2")
 
 [node name="BottomBar" type="HBoxContainer" parent="PortraitLayout"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 12
 
 [node name="SelectedTileLabel" type="Label" parent="PortraitLayout/BottomBar"]
 layout_mode = 2
@@ -63,5 +63,5 @@ autowrap_mode = 3
 
 [node name="SpawnTransistorButton" type="Button" parent="PortraitLayout/BottomBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(220, 60)
+custom_minimum_size = Vector2(280, 88)
 text = "Build Home"
