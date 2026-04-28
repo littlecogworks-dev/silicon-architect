@@ -15,6 +15,7 @@ public partial class MotherboardTile : Control
         Transistor,
         LogicGate,
         Processor,
+        Shop,
         PowerRail,
         Fan,
     }
@@ -46,6 +47,9 @@ public partial class MotherboardTile : Control
     private float _totalGridCapacity;
     private bool _placementHighlighted;
     private bool _mergeSelected;
+    private bool _mergeTargetHighlighted;
+    private bool _mergeTargetIsValid;
+    private bool _shopCoverageHighlighted;
     private bool _touchSelected;
     private float _idleTime;
     private bool _isPulseAnimating;
@@ -152,6 +156,19 @@ public partial class MotherboardTile : Control
         UpdateVisualState();
     }
 
+    public void SetMergeTargetHighlight(bool isHighlighted, bool isValid)
+    {
+        _mergeTargetHighlighted = isHighlighted;
+        _mergeTargetIsValid = isValid;
+        UpdateVisualState();
+    }
+
+    public void SetShopCoverageHighlight(bool isHighlighted)
+    {
+        _shopCoverageHighlighted = isHighlighted;
+        UpdateVisualState();
+    }
+
     public void SetTouchSelection(bool isSelected)
     {
         _touchSelected = isSelected;
@@ -224,7 +241,7 @@ public partial class MotherboardTile : Control
     /// </summary>
     private float CalculateOutputEfficiency(float heat)
     {
-        if (Role != TileRole.Processor && Role != TileRole.LogicGate && Role != TileRole.Transistor)
+        if (Role != TileRole.Processor && Role != TileRole.LogicGate && Role != TileRole.Transistor && Role != TileRole.Shop)
         {
             return 1.0f;
         }
@@ -268,6 +285,7 @@ public partial class MotherboardTile : Control
             TileRole.Processor => new Color("#2a2620"),
             TileRole.LogicGate => new Color("#2b2a1f"),
             TileRole.Transistor => new Color("#243022"),
+            TileRole.Shop => new Color("#312523"),
             TileRole.Fan => new Color("#1f2b35"),
             _ => new Color("#1c2b24"),
         };
@@ -291,11 +309,12 @@ public partial class MotherboardTile : Control
                 TileRole.Processor => new Color("#f2f5f7"),
                 TileRole.LogicGate => new Color("#ffe680"),
                 TileRole.Transistor => new Color("#b7f171"),
+                TileRole.Shop => new Color("#ffb37a"),
                 TileRole.Fan => new Color("#7df9ff"),
                 _ => new Color("#7fb069"),
             };
 
-            if ((Role == TileRole.Processor || Role == TileRole.LogicGate || Role == TileRole.Transistor) && _suppliedPowerRatio < 1.0f)
+            if ((Role == TileRole.Processor || Role == TileRole.LogicGate || Role == TileRole.Transistor || Role == TileRole.Shop) && _suppliedPowerRatio < 1.0f)
             {
                 socketColor = socketColor.Lerp(new Color("#ff7f50"), 1.0f - _suppliedPowerRatio);
             }
@@ -308,6 +327,18 @@ public partial class MotherboardTile : Control
             if (_mergeSelected)
             {
                 socketColor = socketColor.Lerp(new Color("#80a5ff"), 0.8f);
+            }
+
+            if (_mergeTargetHighlighted)
+            {
+                socketColor = _mergeTargetIsValid
+                    ? socketColor.Lerp(new Color("#91ff8e"), 0.8f)
+                    : socketColor.Lerp(new Color("#ff7c7c"), 0.8f);
+            }
+
+            if (_shopCoverageHighlighted)
+            {
+                socketColor = socketColor.Lerp(new Color("#8de6ff"), 0.45f);
             }
 
             if (_touchSelected)

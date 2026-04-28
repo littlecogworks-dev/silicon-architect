@@ -8,6 +8,8 @@ public partial class GridManager
     private Label _objectiveLabel;
     private Label _selectedTileLabel;
     private Button _spawnButton;
+    private Button _parkButton;
+    private Button _shopButton;
     private Button _doubleIncomeButton;
     private Control _floatingTextRoot;
     private float _objectiveHudFlashRemaining;
@@ -27,6 +29,8 @@ public partial class GridManager
         _objectiveLabel = sceneRoot.FindChild("ObjectiveLabel", true, false) as Label;
         _selectedTileLabel = sceneRoot.FindChild("SelectedTileLabel", true, false) as Label;
         _spawnButton = sceneRoot.FindChild("SpawnTransistorButton", true, false) as Button;
+        _parkButton = sceneRoot.FindChild("SpawnParkButton", true, false) as Button;
+        _shopButton = sceneRoot.FindChild("SpawnShopButton", true, false) as Button;
         _doubleIncomeButton = sceneRoot.FindChild("DoubleIncomeButton", true, false) as Button;
 
         if (_simulationHudLabel != null)
@@ -64,6 +68,26 @@ public partial class GridManager
             }
             _doubleIncomeButton.Pressed += OnIncomeBoostButtonPressed;
             UpdateDoubleIncomeButtonState();
+        }
+
+        if (_parkButton != null)
+        {
+            var parkCallable = Callable.From(OnParkButtonPressed);
+            if (_parkButton.IsConnected(BaseButton.SignalName.Pressed, parkCallable))
+            {
+                _parkButton.Pressed -= OnParkButtonPressed;
+            }
+            _parkButton.Pressed += OnParkButtonPressed;
+        }
+
+        if (_shopButton != null)
+        {
+            var shopCallable = Callable.From(OnShopButtonPressed);
+            if (_shopButton.IsConnected(BaseButton.SignalName.Pressed, shopCallable))
+            {
+                _shopButton.Pressed -= OnShopButtonPressed;
+            }
+            _shopButton.Pressed += OnShopButtonPressed;
         }
 
         _floatingTextRoot = sceneRoot.FindChild("FloatingTextRoot", true, false) as Control;
@@ -208,6 +232,12 @@ public partial class GridManager
     /// </summary>
     private void OnIncomeBoostButtonPressed()
     {
+        if (!_incomeBoostUnlocked)
+        {
+            _spawnStatus = CityTerminology.IncomeBoostLockedPrompt;
+            return;
+        }
+
         if (DevInstantRewardedAd)
         {
             GrantRewardedIncome();
@@ -239,6 +269,13 @@ public partial class GridManager
             return;
         }
 
+        if (!_incomeBoostUnlocked)
+        {
+            _doubleIncomeButton.Text = "2x Income (Locked)";
+            _doubleIncomeButton.Disabled = true;
+            return;
+        }
+
         _doubleIncomeButton.Text = "2x Income (Ad)";
         _doubleIncomeButton.Disabled = false;
     }
@@ -255,9 +292,45 @@ public partial class GridManager
         if (_isPlacementMode)
         {
             _spawnButton.Disabled = false;
+        }
+        else
+        {
+            _spawnButton.Disabled = _totalCoins < _currentHomeCost || !HasEmptySocket();
+        }
+
+        if (_parkButton == null)
+        {
             return;
         }
 
-        _spawnButton.Disabled = _totalCoins < _currentHomeCost || !HasEmptySocket();
+        if (!_parksUnlocked)
+        {
+            _parkButton.Text = "Build Park (Locked)";
+            _parkButton.Disabled = true;
+            return;
+        }
+
+        _parkButton.Text = _isParkPlacementMode ? "Cancel Park" : $"Build Park ({_currentParkCost:0})";
+        if (_isParkPlacementMode)
+        {
+            _parkButton.Disabled = false;
+            return;
+        }
+
+        _parkButton.Disabled = _totalCoins < _currentParkCost || !HasEmptySocket();
+
+        if (_shopButton == null)
+        {
+            return;
+        }
+
+        _shopButton.Text = _isShopPlacementMode ? "Cancel Shop" : $"Build Shop ({_currentShopCost:0})";
+        if (_isShopPlacementMode)
+        {
+            _shopButton.Disabled = false;
+            return;
+        }
+
+        _shopButton.Disabled = _totalCoins < _currentShopCost || !HasEmptySocket();
     }
 }

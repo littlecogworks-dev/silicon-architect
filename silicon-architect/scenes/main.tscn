@@ -70,3 +70,13 @@ autowrap_mode = 3
 layout_mode = 2
 custom_minimum_size = Vector2(280, 88)
 text = "Build Home"
+
+[node name="SpawnParkButton" type="Button" parent="PortraitLayout/BottomBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 88)
+text = "Build Park (Locked)"
+
+[node name="SpawnShopButton" type="Button" parent="PortraitLayout/BottomBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 88)
+text = "Build Shop"

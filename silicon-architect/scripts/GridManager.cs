@@ -57,6 +57,19 @@ public partial class GridManager : GridContainer
     [Export] public int OpeningFlatCostBuildCount = 3;
     [Export] public float OpeningHomeCostStep = 5.0f;
     [Export] public float HomeCostMultiplier = 1.15f;
+    [Export] public float StartingParkCost = 45.0f;
+    [Export] public float ParkCostMultiplier = 1.2f;
+    [Export] public float StartingShopCost = 55.0f;
+    [Export] public float ShopCostMultiplier = 1.2f;
+    [Export] public float ShopHeatGenerationPerSecond = 7.0f;
+    [Export] public float ShopPassiveCoolingPerSecond = 1.5f;
+    [Export] public float ShopDataOutputPerSecond = 0.4f;
+    [Export] public float ShopPowerDraw = 12.0f;
+    [Export] public float AmenitiesCashMultiplier = 1.25f;
+    [Export] public float AmenitiesHeatMultiplier = 0.75f;
+    [Export] public float HighRiseParkAdjacencyIncomeMultiplier = 1.2f;
+    [Export] public int ShopServiceRadius = 2;
+    [Export] public float IncomeBoostUnlockCashThreshold = 180.0f;
     [Export] public float FanHeatGenerationPerSecond = 0.0f;
     [Export] public float FanPassiveCoolingPerSecond = 10.0f;
     [Export] public float FanPowerDraw = 8.0f;
@@ -74,12 +87,22 @@ public partial class GridManager : GridContainer
     private float _totalCoins;
     private float _lastCoinsGenerated;
     private float _currentHomeCost;
+    private float _currentParkCost;
+    private float _currentShopCost;
     private int _homesBuilt;
+    private int _parksBuilt;
+    private int _shopsBuilt;
     private bool _isPlacementMode;
+    private bool _isParkPlacementMode;
+    private bool _isShopPlacementMode;
+    private bool _parksUnlocked;
+    private bool _incomeBoostUnlocked;
+    private bool _eventsUnlocked;
     private string _spawnStatus = CityTerminology.InitialBuildPrompt;
     private float _incomeMultiplier = 1.0f;
     private float _rewardedIncomeTimeRemaining;
     private MotherboardTile _selectedMergeTile;
+    private MotherboardTile _mergeHoverTile;
     private MotherboardTile _selectedTouchTile;
     private ObjectiveType _activeObjectiveType;
     private int _activeObjectiveTarget;
@@ -94,7 +117,14 @@ public partial class GridManager : GridContainer
         Columns = GridSize;
         _totalCoins = StartingCash;
         _currentHomeCost = StartingHomeCost;
+        _currentParkCost = StartingParkCost;
+        _currentShopCost = StartingShopCost;
         _homesBuilt = 0;
+        _parksBuilt = 0;
+        _shopsBuilt = 0;
+        _parksUnlocked = false;
+        _incomeBoostUnlocked = false;
+        _eventsUnlocked = false;
         InitializeObjectives();
 
         Control parent = GetParentControl();
@@ -131,6 +161,16 @@ public partial class GridManager : GridContainer
         if (_doubleIncomeButton != null)
         {
             _doubleIncomeButton.Pressed -= OnIncomeBoostButtonPressed;
+        }
+
+        if (_parkButton != null)
+        {
+            _parkButton.Pressed -= OnParkButtonPressed;
+        }
+
+        if (_shopButton != null)
+        {
+            _shopButton.Pressed -= OnShopButtonPressed;
         }
     }
 
@@ -171,6 +211,18 @@ public partial class GridManager : GridContainer
     {
         if (!_gridGenerated || _selectedMergeTile == null)
         {
+            return;
+        }
+
+        if (@event is InputEventMouseMotion mouseMotion)
+        {
+            UpdateMergeDragHover(mouseMotion.GlobalPosition);
+            return;
+        }
+
+        if (@event is InputEventScreenDrag screenDrag)
+        {
+            UpdateMergeDragHover(screenDrag.Position);
             return;
         }
 
@@ -245,6 +297,9 @@ public partial class GridManager : GridContainer
             case MotherboardTile.TileRole.Processor:
                 tile.Configure(coordinates, role, 3, ProcessorHeatGenerationPerSecond, ProcessorPassiveCoolingPerSecond, ProcessorDataOutputPerSecond, ProcessorPowerDraw, 0.0f);
                 break;
+            case MotherboardTile.TileRole.Shop:
+                tile.Configure(coordinates, role, 1, ShopHeatGenerationPerSecond, ShopPassiveCoolingPerSecond, ShopDataOutputPerSecond, ShopPowerDraw, 0.0f);
+                break;
             case MotherboardTile.TileRole.LogicGate:
                 tile.Configure(coordinates, role, 2, LogicGateHeatGenerationPerSecond, LogicGatePassiveCoolingPerSecond, LogicGateDataOutputPerSecond, LogicGatePowerDraw, 0.0f);
                 break;
@@ -284,6 +339,58 @@ public partial class GridManager : GridContainer
         }
 
         _currentHomeCost = Mathf.Round(_currentHomeCost * HomeCostMultiplier);
+    }
+
+    private void AdvanceParkCost()
+    {
+        _parksBuilt += 1;
+        _currentParkCost = Mathf.Round(_currentParkCost * ParkCostMultiplier);
+    }
+
+    private void AdvanceShopCost()
+    {
+        _shopsBuilt += 1;
+        _currentShopCost = Mathf.Round(_currentShopCost * ShopCostMultiplier);
+    }
+
+    private void SetPlacementMode(bool homeMode, bool parkMode, bool shopMode)
+    {
+        _isPlacementMode = homeMode;
+        _isParkPlacementMode = parkMode;
+        _isShopPlacementMode = shopMode;
+        UpdatePlacementHighlights();
+    }
+
+    private void CancelPlacementMode(string statusMessage)
+    {
+        SetPlacementMode(false, false, false);
+        _spawnStatus = statusMessage;
+    }
+
+    private void TryUnlockIncomeBoostFromCash()
+    {
+        if (_incomeBoostUnlocked || _totalCoins < IncomeBoostUnlockCashThreshold)
+        {
+            return;
+        }
+
+        _incomeBoostUnlocked = true;
+        _spawnStatus = CityTerminology.IncomeBoostUnlockedPrompt;
+    }
+
+    private void HandleMergeMilestones(MotherboardTile.TileRole mergedRole)
+    {
+        if (mergedRole == MotherboardTile.TileRole.LogicGate && !_parksUnlocked)
+        {
+            _parksUnlocked = true;
+            _spawnStatus = CityTerminology.ParksUnlockedPrompt;
+        }
+
+        if (mergedRole == MotherboardTile.TileRole.Processor && !_eventsUnlocked)
+        {
+            _eventsUnlocked = true;
+            _spawnStatus = CityTerminology.EventsUnlockedPrompt;
+        }
     }
 
     private void InitializeObjectives()
@@ -404,9 +511,13 @@ public partial class GridManager : GridContainer
         // Second pass applies the snapshot, updates income, and refreshes per-tile presentation.
         foreach (MotherboardTile tile in _tiles)
         {
+            bool hasShopAmenities =
+                (tile.Role == MotherboardTile.TileRole.Transistor || tile.Role == MotherboardTile.TileRole.LogicGate) &&
+                HasRoleWithinRadius(tile, MotherboardTile.TileRole.Shop, ShopServiceRadius);
             float neighborPollutionAverage = GetNeighborPollutionAverage(tile);
             float thermalBleed = (neighborPollutionAverage - tile.CurrentHeat) * ThermalBleedFactor;
-            float generatedHeat = tile.HeatGenerationPerSecond * tile.Efficiency * suppliedPowerRatio;
+            float heatMultiplier = hasShopAmenities ? AmenitiesHeatMultiplier : 1.0f;
+            float generatedHeat = tile.HeatGenerationPerSecond * tile.Efficiency * suppliedPowerRatio * heatMultiplier;
             float cooling = (tile.PassiveCoolingPerSecond + AmbientCoolingPerSecond) * deltaSeconds;
             float nextPollution = tile.CurrentHeat + ((generatedHeat + thermalBleed) * deltaSeconds) - cooling;
             nextPollutionByTile[tile] = nextPollution;
@@ -419,7 +530,7 @@ public partial class GridManager : GridContainer
             tile.SetHeat(nextPollutionByTile[tile]);
             hottestTile = Mathf.Max(hottestTile, tile.CurrentHeat);
 
-            if (tile.Role == MotherboardTile.TileRole.Processor || tile.Role == MotherboardTile.TileRole.LogicGate || tile.Role == MotherboardTile.TileRole.Transistor)
+            if (tile.Role == MotherboardTile.TileRole.Processor || tile.Role == MotherboardTile.TileRole.LogicGate || tile.Role == MotherboardTile.TileRole.Transistor || tile.Role == MotherboardTile.TileRole.Shop)
             {
                 incomeDistrictCount += 1;
                 if (tile.Efficiency < 0.999f)
@@ -430,7 +541,18 @@ public partial class GridManager : GridContainer
 
             if (tile.DataOutputPerSecond > 0.0f)
             {
-                float tileIncome = tile.DataOutputPerSecond * tile.Efficiency * suppliedPowerRatio * deltaSeconds * IncomePerDataUnit * _incomeMultiplier;
+                float incomeMultiplier = 1.0f;
+                if ((tile.Role == MotherboardTile.TileRole.Transistor || tile.Role == MotherboardTile.TileRole.LogicGate) && HasRoleWithinRadius(tile, MotherboardTile.TileRole.Shop, ShopServiceRadius))
+                {
+                    incomeMultiplier *= AmenitiesCashMultiplier;
+                }
+
+                if (tile.Role == MotherboardTile.TileRole.Processor && IsAdjacentToRole(tile, MotherboardTile.TileRole.Fan))
+                {
+                    incomeMultiplier *= HighRiseParkAdjacencyIncomeMultiplier;
+                }
+
+                float tileIncome = tile.DataOutputPerSecond * tile.Efficiency * suppliedPowerRatio * deltaSeconds * IncomePerDataUnit * _incomeMultiplier * incomeMultiplier;
                 if (tileIncome > 0.0f)
                 {
                     coinsGeneratedThisTick += tileIncome;
@@ -447,6 +569,8 @@ public partial class GridManager : GridContainer
         _lastCoinsGenerated = coinsGeneratedThisTick;
         _totalCoins += coinsGeneratedThisTick;
         AddObjectiveCashProgress(coinsGeneratedThisTick);
+        TryUnlockIncomeBoostFromCash();
+        RefreshShopCoverageHighlights();
 
         if (_simulationHudLabel != null)
         {
@@ -463,7 +587,8 @@ public partial class GridManager : GridContainer
 
         UpdateObjectiveReadout(GetObjectiveDescription(_activeObjectiveType), _activeObjectiveProgress, _activeObjectiveTarget, _activeObjectiveRewardCash);
 
-            UpdateSpawnButtonState();
+        UpdateSpawnButtonState();
+        UpdateDoubleIncomeButtonState();
 
         _telemetryAccumulator += deltaSeconds;
         UpdateSelectedTileReadout();
@@ -506,16 +631,66 @@ public partial class GridManager : GridContainer
         return totalWeight > 0.0f ? totalNeighborPollution / totalWeight : tile.CurrentHeat;
     }
 
+    private void RefreshShopCoverageHighlights()
+    {
+        foreach (MotherboardTile tile in _tiles)
+        {
+            bool hasCoverage =
+                (tile.Role == MotherboardTile.TileRole.Transistor || tile.Role == MotherboardTile.TileRole.LogicGate) &&
+                HasRoleWithinRadius(tile, MotherboardTile.TileRole.Shop, ShopServiceRadius);
+            tile.SetShopCoverageHighlight(hasCoverage);
+        }
+    }
+
+    private bool HasRoleWithinRadius(MotherboardTile centerTile, MotherboardTile.TileRole role, int radius)
+    {
+        for (int y = -radius; y <= radius; y++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                if (x == 0 && y == 0)
+                {
+                    continue;
+                }
+
+                Vector2I candidate = centerTile.GridPosition + new Vector2I(x, y);
+                if (_tilesByPosition.TryGetValue(candidate, out MotherboardTile neighbor) && neighbor.Role == role)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsAdjacentToRole(MotherboardTile centerTile, MotherboardTile.TileRole role)
+    {
+        foreach (Vector2I offset in OrthogonalNeighborOffsets)
+        {
+            Vector2I candidate = centerTile.GridPosition + offset;
+            if (_tilesByPosition.TryGetValue(candidate, out MotherboardTile neighbor) && neighbor.Role == role)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void OnBuildButtonPressed()
     {
         ClearMergeSelection();
 
         if (_isPlacementMode)
         {
-            _isPlacementMode = false;
-            _spawnStatus = CityTerminology.PlacementCanceledPrompt;
-            UpdatePlacementHighlights();
+            CancelPlacementMode(CityTerminology.PlacementCanceledPrompt);
             return;
+        }
+
+        if (_isParkPlacementMode || _isShopPlacementMode)
+        {
+            SetPlacementMode(false, false, false);
         }
 
         if (_totalCoins < _currentHomeCost)
@@ -530,9 +705,81 @@ public partial class GridManager : GridContainer
             return;
         }
 
-        _isPlacementMode = true;
+        SetPlacementMode(true, false, false);
         _spawnStatus = CityTerminology.PlacementModePrompt;
-        UpdatePlacementHighlights();
+    }
+
+    private void OnParkButtonPressed()
+    {
+        ClearMergeSelection();
+
+        if (!_parksUnlocked)
+        {
+            _spawnStatus = CityTerminology.ParksLockedPrompt;
+            return;
+        }
+
+        if (_isParkPlacementMode)
+        {
+            CancelPlacementMode(CityTerminology.PlacementCanceledPrompt);
+            return;
+        }
+
+        if (_isPlacementMode)
+        {
+            SetPlacementMode(false, false, false);
+        }
+
+        if (_isShopPlacementMode)
+        {
+            SetPlacementMode(false, false, false);
+        }
+
+        if (_totalCoins < _currentParkCost)
+        {
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentParkCost - _totalCoins);
+            return;
+        }
+
+        if (!HasEmptySocket())
+        {
+            _spawnStatus = CityTerminology.NoEmptyLotsPrompt;
+            return;
+        }
+
+        SetPlacementMode(false, true, false);
+        _spawnStatus = CityTerminology.ParkPlacementModePrompt;
+    }
+
+    private void OnShopButtonPressed()
+    {
+        ClearMergeSelection();
+
+        if (_isShopPlacementMode)
+        {
+            CancelPlacementMode(CityTerminology.PlacementCanceledPrompt);
+            return;
+        }
+
+        if (_isPlacementMode || _isParkPlacementMode)
+        {
+            SetPlacementMode(false, false, false);
+        }
+
+        if (_totalCoins < _currentShopCost)
+        {
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentShopCost - _totalCoins);
+            return;
+        }
+
+        if (!HasEmptySocket())
+        {
+            _spawnStatus = CityTerminology.NoEmptyLotsPrompt;
+            return;
+        }
+
+        SetPlacementMode(false, false, true);
+        _spawnStatus = CityTerminology.ShopPlacementModePrompt;
     }
 
     private void OnTileTapped(MotherboardTile tile)
@@ -543,17 +790,27 @@ public partial class GridManager : GridContainer
         // Build mode still exists for continuous placement until canceled.
         if (tile.Role == MotherboardTile.TileRole.Empty)
         {
+            if (_isShopPlacementMode)
+            {
+                TryPlaceShop(tile);
+                return;
+            }
+
+            if (_isParkPlacementMode)
+            {
+                TryPlacePark(tile);
+                return;
+            }
+
             TryPlaceHome(tile);
             return;
         }
 
-        if (_isPlacementMode)
+        if (_isPlacementMode || _isParkPlacementMode || _isShopPlacementMode)
         {
             // Tapping an occupied tile while building exits build mode cleanly.
             // Does NOT fall through to merge — the press here is a mode switch, not a drag start.
-            _isPlacementMode = false;
-            _spawnStatus = CityTerminology.PlacementCanceledPrompt;
-            UpdatePlacementHighlights();
+            CancelPlacementMode(CityTerminology.PlacementCanceledPrompt);
             return;
         }
 
@@ -574,8 +831,7 @@ public partial class GridManager : GridContainer
         if (_totalCoins < _currentHomeCost)
         {
             _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentHomeCost - _totalCoins);
-            _isPlacementMode = false;
-            UpdatePlacementHighlights();
+            SetPlacementMode(false, false, false);
             return;
         }
 
@@ -590,18 +846,96 @@ public partial class GridManager : GridContainer
 
         if (_totalCoins >= _currentHomeCost && HasEmptySocket())
         {
-            _isPlacementMode = true;
+            SetPlacementMode(true, false, false);
             _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.PlacementModePrompt}";
         }
         else if (!HasEmptySocket())
         {
-            _isPlacementMode = false;
+            SetPlacementMode(false, false, false);
             _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.NoEmptyLotsPrompt}";
         }
         else
         {
-            _isPlacementMode = false;
+            SetPlacementMode(false, false, false);
             _spawnStatus = $"{CityTerminology.FormatBuiltMessage(tile.Name)}. {CityTerminology.FormatNeedMoreCash(_currentHomeCost - _totalCoins)}";
+        }
+
+        UpdatePlacementHighlights();
+    }
+
+    private void TryPlacePark(MotherboardTile tile)
+    {
+        if (tile.Role != MotherboardTile.TileRole.Empty)
+        {
+            _spawnStatus = CityTerminology.PickEmptyLotPrompt;
+            return;
+        }
+
+        if (_totalCoins < _currentParkCost)
+        {
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentParkCost - _totalCoins);
+            SetPlacementMode(false, false, false);
+            return;
+        }
+
+        _totalCoins -= _currentParkCost;
+        AdvanceParkCost();
+        ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Fan);
+        tile.PlayPlacementJuice();
+
+        if (_totalCoins >= _currentParkCost && HasEmptySocket())
+        {
+            SetPlacementMode(false, true, false);
+            _spawnStatus = $"{CityTerminology.FormatBuiltParkMessage(tile.Name)}. {CityTerminology.ParkPlacementModePrompt}";
+        }
+        else if (!HasEmptySocket())
+        {
+            SetPlacementMode(false, false, false);
+            _spawnStatus = $"{CityTerminology.FormatBuiltParkMessage(tile.Name)}. {CityTerminology.NoEmptyLotsPrompt}";
+        }
+        else
+        {
+            SetPlacementMode(false, false, false);
+            _spawnStatus = $"{CityTerminology.FormatBuiltParkMessage(tile.Name)}. {CityTerminology.FormatNeedMoreCash(_currentParkCost - _totalCoins)}";
+        }
+
+        UpdatePlacementHighlights();
+    }
+
+    private void TryPlaceShop(MotherboardTile tile)
+    {
+        if (tile.Role != MotherboardTile.TileRole.Empty)
+        {
+            _spawnStatus = CityTerminology.PickEmptyLotPrompt;
+            return;
+        }
+
+        if (_totalCoins < _currentShopCost)
+        {
+            _spawnStatus = CityTerminology.FormatNeedMoreCash(_currentShopCost - _totalCoins);
+            SetPlacementMode(false, false, false);
+            return;
+        }
+
+        _totalCoins -= _currentShopCost;
+        AdvanceShopCost();
+        ApplyRoleConfiguration(tile, tile.GridPosition, MotherboardTile.TileRole.Shop);
+        tile.PlayPlacementJuice();
+
+        if (_totalCoins >= _currentShopCost && HasEmptySocket())
+        {
+            SetPlacementMode(false, false, true);
+            _spawnStatus = $"{CityTerminology.FormatBuiltShopMessage(tile.Name)}. {CityTerminology.ShopPlacementModePrompt}";
+        }
+        else if (!HasEmptySocket())
+        {
+            SetPlacementMode(false, false, false);
+            _spawnStatus = $"{CityTerminology.FormatBuiltShopMessage(tile.Name)}. {CityTerminology.NoEmptyLotsPrompt}";
+        }
+        else
+        {
+            SetPlacementMode(false, false, false);
+            _spawnStatus = $"{CityTerminology.FormatBuiltShopMessage(tile.Name)}. {CityTerminology.FormatNeedMoreCash(_currentShopCost - _totalCoins)}";
         }
 
         UpdatePlacementHighlights();
@@ -624,6 +958,41 @@ public partial class GridManager : GridContainer
         _selectedMergeTile = tile;
         _selectedMergeTile.SetMergeSelection(true);
         _spawnStatus = CityTerminology.FormatMergeSelected(tile.Role, tile.Name);
+    }
+
+    private void UpdateMergeDragHover(Vector2 pointerPosition)
+    {
+        MotherboardTile hoveredTile = GetTileAtGlobalPosition(pointerPosition);
+        bool isValid = IsValidMergeTarget(hoveredTile);
+
+        if (_mergeHoverTile != null && _mergeHoverTile != hoveredTile)
+        {
+            _mergeHoverTile.SetMergeTargetHighlight(false, false);
+            _mergeHoverTile = null;
+        }
+
+        if (hoveredTile == null || hoveredTile == _selectedMergeTile)
+        {
+            return;
+        }
+
+        _mergeHoverTile = hoveredTile;
+        _mergeHoverTile.SetMergeTargetHighlight(true, isValid);
+    }
+
+    private bool IsValidMergeTarget(MotherboardTile target)
+    {
+        if (_selectedMergeTile == null || target == null || target == _selectedMergeTile)
+        {
+            return false;
+        }
+
+        if (_selectedMergeTile.Role != target.Role)
+        {
+            return false;
+        }
+
+        return TryGetMergedRole(target.Role, out _);
     }
 
     /// <summary>
@@ -657,6 +1026,7 @@ public partial class GridManager : GridContainer
         target.SetHeat(mergedHeat);
         target.PlayMergePulse();
         ApplyRoleConfiguration(_selectedMergeTile, _selectedMergeTile.GridPosition, MotherboardTile.TileRole.Empty);
+        HandleMergeMilestones(mergedRole);
         if (_activeObjectiveType == ObjectiveType.PerformMerges)
         {
             AddObjectiveProgress(1);
@@ -703,6 +1073,12 @@ public partial class GridManager : GridContainer
 
     private void ClearMergeSelection()
     {
+        if (_mergeHoverTile != null)
+        {
+            _mergeHoverTile.SetMergeTargetHighlight(false, false);
+            _mergeHoverTile = null;
+        }
+
         if (_selectedMergeTile != null)
         {
             _selectedMergeTile.SetMergeSelection(false);
@@ -727,7 +1103,7 @@ public partial class GridManager : GridContainer
     {
         foreach (MotherboardTile tile in _tiles)
         {
-            bool shouldHighlight = _isPlacementMode && tile.Role == MotherboardTile.TileRole.Empty;
+            bool shouldHighlight = (_isPlacementMode || _isParkPlacementMode || _isShopPlacementMode) && tile.Role == MotherboardTile.TileRole.Empty;
             tile.SetPlacementHighlight(shouldHighlight);
         }
     }

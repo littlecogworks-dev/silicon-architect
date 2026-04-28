@@ -14,17 +14,24 @@ public static class CityTerminology
     public const string EmptyLotName = "Empty Lot";
     public const string BuildUnitName = "Home";
     public const string InspectPrompt = "Tap a tile to inspect";
-    public static string InitialBuildPrompt => $"Tap Build {BuildUnitName}, then tap an empty lot";
+    public static string InitialBuildPrompt => $"Tap an empty lot to build a {BuildUnitName}, or use Build mode";
 
     public static string IncomeBoostExpired => $"{BoostLabel} expired";
+    public static string IncomeBoostLockedPrompt => "2x Income unlocks after reaching more cash";
+    public static string IncomeBoostUnlockedPrompt => "2x Income unlocked";
     public static string NoEmptyLotsPrompt => "No empty lots available";
     public static string PlacementModePrompt => "Build mode: tap an empty lot";
+    public static string ParkPlacementModePrompt => "Park mode: tap an empty lot";
+    public static string ShopPlacementModePrompt => "Shop mode: tap an empty lot";
     public static string PickEmptyLotPrompt => "Pick an empty lot";
-    public static string MergePendingPrompt => "Merge pending - tap a matching building to complete";
-    public static string MergeStartPrompt => "Tap a building to select it for merging";
+    public static string MergePendingPrompt => "Merge pending - drag onto a matching building to complete";
+    public static string MergeStartPrompt => "Tap and drag from one building onto a matching building";
     public static string MergeSelectionCleared => "Merge selection cleared";
     public static string MergeRequiresMatchPrompt => "Merge requires matching buildings";
     public static string PlacementCanceledPrompt => "Build canceled";
+    public static string ParksLockedPrompt => "Parks unlock after your first Apartment";
+    public static string ParksUnlockedPrompt => "Parks unlocked";
+    public static string EventsUnlockedPrompt => "Event tiles unlocked (coming soon)";
 
     public static string GetRoleName(MotherboardTile.TileRole role)
     {
@@ -32,7 +39,8 @@ public static class CityTerminology
         {
             MotherboardTile.TileRole.Transistor => "Home",
             MotherboardTile.TileRole.LogicGate => "Apartment",
-            MotherboardTile.TileRole.Processor => "Commercial Hub",
+            MotherboardTile.TileRole.Processor => "High-Rise",
+            MotherboardTile.TileRole.Shop => "Shop",
             MotherboardTile.TileRole.PowerRail => "Power Grid",
             MotherboardTile.TileRole.Fan => "Park",
             _ => EmptyLotName,
@@ -81,9 +89,19 @@ public static class CityTerminology
         return $"Built {BuildUnitName} on {tileName}";
     }
 
+    public static string FormatBuiltParkMessage(string tileName)
+    {
+        return $"Built Park on {tileName}";
+    }
+
+    public static string FormatBuiltShopMessage(string tileName)
+    {
+        return $"Built Shop on {tileName}";
+    }
+
     public static string FormatMergeSelected(MotherboardTile.TileRole role, string tileName)
     {
-        return $"Selected {GetRoleName(role)} on {tileName}; tap matching tile to merge";
+        return $"Selected {GetRoleName(role)} on {tileName}; drag onto a matching tile to merge";
     }
 
     public static string FormatMergedInto(MotherboardTile.TileRole role, string tileName)
