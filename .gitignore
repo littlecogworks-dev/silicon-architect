@@ -25,3 +25,5 @@ Thumbs.db
 # --- VS Code Specific ---
 .history/
 *.log
+
+.obsidian/

@@ -5,7 +5,7 @@ Primary Tech Stack: Godot 4 (C#/.NET), Affinity Designer, Obsidian.
 
 ## 🏗️ System Architecture
 
-Core Logic: Documentation of the "Tick" system, heat bleed math, and currency generation.
+Core Logic: Documentation of the "Tick" system, heat bleed maths, and currency generation.
 
 Component Data: A database of all hardware (CPUs, Coolers, Power Rails) and their stats.
 
@@ -13,7 +13,7 @@ Fail States: Detailed logic for Thermal Throttling and the "City Falls" meltdown
 
 ## 🎨 Visual Identity
 
-Asset Guidelines: Modular tile specs (256px), anchor points, and color palettes.
+Asset Guidelines: Modular tile specs (256px), anchor points, and colour palettes.
 
 Reference Art: Mood boards and circuit board schematics.
 
@@ -32,6 +32,7 @@ Tile Anchor Points: 64px, 128px, 192px.
 The "Spark": Heat must be a physical constraint, not just a UI bar.
 
 ## Inspiration
->
+
 > "Silicon is just sand with ideas."
 > — Anonymous Hardware Enthusiast
+
